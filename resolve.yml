@@ -1,0 +1,29 @@
+name: Resolve Markets
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub Actions cron can lag a few minutes under load —
+    # fine for this use case, doesn't need to be exact to the second.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}  # lets you also trigger it manually from the Actions tab
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/resolver/requirements.txt
+
+      - name: Run resolver
+        env:
+          ARC_RPC_URL: https://rpc.testnet.arc.network
+          MARKET_ADDRESS: ${{ secrets.MARKET_ADDRESS }}
+          RESOLVER_PRIVATE_KEY: ${{ secrets.RESOLVER_PRIVATE_KEY }}
+        working-directory: backend/resolver
+        run: python resolver_once.py
