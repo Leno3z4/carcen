@@ -1,6 +1,6 @@
 import { defineChain } from "viem";
 
-// Arc Testnet — EVM-compatible L1, USDC as native gas (6 decimals).
+// Arc  Testnet — EVM-compatible L1, USDC as native gas (6 decimals).
 // Verify against https://docs.arc.io/arc/references/connect-to-arc if anything changes.
 export const arcTestnet = defineChain({
   id: 5042002,
