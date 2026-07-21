@@ -27,7 +27,7 @@ export default function App() {
         <div className="app__brand">
           <span className="app__brand-mark">◐</span>
           <div>
-            <div className="app__brand-name">ARC MARKETS</div>
+            <div className="app__brand-name">CarXen</div>
             <div className="app__brand-sub">settled in USDC · testnet</div>
           </div>
         </div>
