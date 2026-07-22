@@ -1,0 +1,67 @@
+.wrapper{
+    margin-top:24px;
+}
+
+.track{
+
+    display:flex;
+
+    overflow:hidden;
+
+    height:10px;
+
+    border-radius:999px;
+
+    background:#242d3b;
+
+}
+
+.yes{
+
+    background:linear-gradient(
+        90deg,
+        #2fcf97,
+        #4be2af
+    );
+
+    transition:width .3s ease;
+
+}
+
+.no{
+
+    background:linear-gradient(
+        90deg,
+        #6f52ff,
+        #987dff
+    );
+
+    transition:width .3s ease;
+
+}
+
+.labels{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-top:10px;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+.yesLabel{
+
+    color:#2fcf97;
+
+}
+
+.noLabel{
+
+    color:#987dff;
+
+}
