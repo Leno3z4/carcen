@@ -1,170 +1,466 @@
-/* ---------- Tokens ---------- */
+/* =========================================================
+   CARXEN DESIGN SYSTEM
+   ========================================================= */
+
 :root {
-  --bg: #0b0e14;
-  --panel: #12161f;
-  --panel-border: #1f2530;
-  --panel-border-hover: #2c3444;
-  --text: #edeff4;
-  --text-muted: #8b93a7;
-  --text-dim: #565f72;
-  --yes: #45d6c2;
-  --yes-dim: #1c3d3a;
-  --no: #ef6a55;
-  --no-dim: #402320;
-  --pending: #e0a93c;
-  --font-display: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --bg:#090b11;
+  --bg-secondary:#0d1118;
+
+  --surface:#11151d;
+  --surface-hover:#171d27;
+  --surface-light:#1b2230;
+
+  --border:#252d39;
+  --border-light:#30394a;
+
+  --primary:#6d7cff;
+  --primary-hover:#8490ff;
+
+  --success:#3bd3ab;
+  --success-bg:#183932;
+
+  --danger:#ef6f6f;
+  --danger-bg:#3a2020;
+
+  --warning:#e5b44d;
+
+  --text:#f5f7fb;
+  --muted:#9aa4b3;
+  --dim:#697486;
+
+  --radius:18px;
+  --radius-small:12px;
+
+  --shadow:
+      0 20px 60px rgba(0,0,0,.35);
+
+  --transition:
+      .22s ease;
+
+  --font-display:
+      "Space Grotesk",
+      system-ui,
+      sans-serif;
+
+  --font-mono:
+      "IBM Plex Mono",
+      monospace;
 }
 
-* {
-  box-sizing: border-box;
+*{
+    box-sizing:border-box;
 }
 
 html,
 body,
-#root {
-  height: 100%;
+#root{
+    min-height:100%;
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  background-image: radial-gradient(circle at 15% 0%, rgba(69, 214, 194, 0.06), transparent 45%),
-    radial-gradient(circle at 85% 10%, rgba(239, 106, 85, 0.05), transparent 40%);
-  color: var(--text);
-  font-family: var(--font-display);
-  -webkit-font-smoothing: antialiased;
+body{
+
+    margin:0;
+
+    background:
+        radial-gradient(circle at top left,
+            rgba(109,124,255,.10),
+            transparent 38%),
+
+        radial-gradient(circle at bottom right,
+            rgba(59,211,171,.05),
+            transparent 30%),
+
+        var(--bg);
+
+    color:var(--text);
+
+    font-family:var(--font-display);
+
+    -webkit-font-smoothing:antialiased;
+
 }
 
-button {
-  font-family: inherit;
+button,
+input{
+    font-family:inherit;
 }
 
-/* ---------- Layout ---------- */
-.app {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 24px 20px 80px;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
+a{
+    color:inherit;
+    text-decoration:none;
 }
 
-.app__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--panel-border);
-  margin-bottom: 28px;
-  gap: 16px;
-  flex-wrap: wrap;
+/* =========================================================
+   APP
+   ========================================================= */
+
+.app{
+
+    width:min(1220px,92vw);
+
+    margin:auto;
+
+    padding:34px 0 100px;
+
 }
 
-.app__brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.app__header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:24px;
+
+    margin-bottom:42px;
+
 }
 
-.app__brand-mark {
-  font-size: 22px;
-  color: var(--yes);
+.app__brand{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
 }
 
-.app__brand-name {
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  font-size: 15px;
+.app__brand-mark{
+
+    width:52px;
+
+    height:52px;
+
+    border-radius:16px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            var(--primary),
+            #8794ff
+        );
+
+    display:grid;
+
+    place-items:center;
+
+    color:white;
+
+    font-size:24px;
+
+    font-weight:700;
+
+    box-shadow:
+        0 15px 40px
+        rgba(109,124,255,.35);
+
 }
 
-.app__brand-sub {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.03em;
+.app__brand-name{
+
+    font-size:28px;
+
+    font-weight:700;
+
+    letter-spacing:-.03em;
+
 }
 
-.app__wallet {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.app__brand-sub{
+
+    color:var(--muted);
+
+    margin-top:4px;
+
+    font-size:14px;
+
+}
+
+.app__wallet{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
 }
 
 .app__connect,
-.claim-button {
-  background: var(--yes);
-  color: #06110f;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: filter 0.15s ease;
+.app__address,
+.app__network-warning{
+
+    height:48px;
+
+    border-radius:14px;
+
+    border:none;
+
+    cursor:pointer;
+
+    transition:all var(--transition);
+
 }
 
-.app__connect:hover,
-.claim-button:hover {
-  filter: brightness(1.08);
+.app__connect{
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:0 22px;
+
+    font-weight:600;
+
 }
 
-.app__connect:disabled,
-.claim-button:disabled {
-  opacity: 0.6;
-  cursor: default;
+.app__connect:hover{
+
+    background:var(--primary-hover);
+
+    transform:translateY(-1px);
+
 }
 
-.app__address {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--text-muted);
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  padding: 8px 12px;
+.app__address{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:0 18px;
+
+    background:var(--surface);
+
+    color:var(--text);
+
+    border:1px solid var(--border);
+
 }
 
-.app__network-warning {
-  background: var(--no-dim);
-  color: var(--no);
-  border: 1px solid var(--no);
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
+.wallet-dot{
+
+    width:9px;
+
+    height:9px;
+
+    border-radius:50%;
+
+    background:var(--success);
+
+    box-shadow:
+        0 0 12px
+        var(--success);
+
 }
 
-.app__banner {
-  padding: 12px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  margin-bottom: 20px;
+.app__network-warning{
+
+    padding:0 18px;
+
+    background:var(--danger-bg);
+
+    color:var(--danger);
+
 }
 
-.app__banner--error {
-  background: var(--no-dim);
-  color: var(--no);
-  border: 1px solid rgba(239, 106, 85, 0.35);
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.hero{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:60px;
+
+    margin-bottom:48px;
+
 }
 
-.app__loading,
-.app__empty {
-  color: var(--text-muted);
-  font-size: 14px;
+.hero__content{
+
+    max-width:720px;
+
 }
 
-.app__main {
-  flex: 1;
+.hero__eyebrow{
+
+    color:var(--primary);
+
+    font-size:13px;
+
+    font-weight:700;
+
+    letter-spacing:.22em;
+
+    margin-bottom:16px;
+
 }
 
-.app__footer {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--panel-border);
-  font-size: 12px;
-  color: var(--text-dim);
-  line-height: 1.6;
+.hero__title{
+
+    margin:0;
+
+    font-size:56px;
+
+    line-height:1.05;
+
+    letter-spacing:-.05em;
+
+}
+
+.hero__description{
+
+    margin-top:24px;
+
+    max-width:620px;
+
+    color:var(--muted);
+
+    line-height:1.8;
+
+    font-size:18px;
+
+}
+
+.hero__actions{
+
+    margin-top:36px;
+
+}
+
+.hero__button{
+
+    border:none;
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:
+
+        16px 28px;
+
+    border-radius:16px;
+
+    font-size:15px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:all .2s;
+
+}
+
+.hero__button:hover{
+
+    transform:translateY(-2px);
+
+    background:var(--primary-hover);
+
+}
+
+/* =========================================================
+   OVERVIEW
+   ========================================================= */
+
+.overview{
+
+    display:grid;
+
+    grid-template-columns:
+
+        repeat(4,1fr);
+
+    gap:18px;
+
+    margin-bottom:56px;
+
+}
+
+.overview__card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:20px;
+
+    padding:24px;
+
+    transition:.2s;
+
+}
+
+.overview__card:hover{
+
+    border-color:var(--border-light);
+
+    transform:translateY(-2px);
+
+}
+
+.overview__card span{
+
+    display:block;
+
+    color:var(--muted);
+
+    font-size:13px;
+
+    margin-bottom:14px;
+
+}
+
+.overview__card strong{
+
+    font-size:34px;
+
+    font-weight:700;
+
+}
+
+.section-title{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-end;
+
+    margin-bottom:26px;
+
+}
+
+.section-title h2{
+
+    margin:0;
+
+    font-size:34px;
+
+    letter-spacing:-.03em;
+
+}
+
+.section-title p{
+
+    margin-top:8px;
+
+    color:var(--muted);
+
 }
 
 /* ---------- Market list ---------- */
