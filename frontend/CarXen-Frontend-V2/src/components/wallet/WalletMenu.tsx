@@ -1,59 +1,85 @@
+import { Link } from "react-router-dom";
 import styles from "./WalletDropdown.module.css";
 
 interface WalletDropdownProps {
   address: string;
-
-  onDisconnect(): void;
-}
-
-function copy(address: string) {
-  navigator.clipboard.writeText(address);
+  onDisconnect: () => void;
 }
 
 export default function WalletDropdown({
   address,
   onDisconnect,
 }: WalletDropdownProps) {
+  async function copyAddress() {
+    try {
+      await navigator.clipboard.writeText(address);
+    } catch {
+      console.error("Failed to copy address");
+    }
+  }
+
   return (
     <div className={styles.dropdown}>
-      <div className={styles.addressBox}>
-        <span className={styles.label}>
-          Connected Wallet
-        </span>
+      <div className={styles.header}>
+        <div className={styles.avatar}>
+          {address.slice(2, 4).toUpperCase()}
+        </div>
 
-        <span className={styles.address}>
-          {address}
-        </span>
+        <div className={styles.walletInfo}>
+          <span className={styles.connected}>
+            Connected
+          </span>
+
+          <span className={styles.address}>
+            {address}
+          </span>
+        </div>
+      </div>
+
+      <div className={styles.network}>
+        <span className={styles.networkDot} />
+        Arc Testnet
       </div>
 
       <div className={styles.divider} />
 
-      <button className={styles.item}>
-        Portfolio
-      </button>
+      <nav className={styles.menu}>
+        <Link
+          to="/portfolio"
+          className={styles.link}
+        >
+          Portfolio
+        </Link>
 
-      <button className={styles.item}>
-        Activity
-      </button>
+        <Link
+          to="/activity"
+          className={styles.link}
+        >
+          Activity
+        </Link>
 
-      <button className={styles.item}>
-        Profile
-      </button>
+        <Link
+          to="/profile"
+          className={styles.link}
+        >
+          Profile
+        </Link>
 
-      <button
-        className={styles.item}
-        onClick={() => copy(address)}
-      >
-        Copy Address
-      </button>
+        <button
+          className={styles.button}
+          onClick={copyAddress}
+        >
+          Copy Address
+        </button>
+      </nav>
 
       <div className={styles.divider} />
 
       <button
-        className={`${styles.item} ${styles.disconnect}`}
+        className={styles.disconnect}
         onClick={onDisconnect}
       >
-        Disconnect
+        Disconnect Wallet
       </button>
     </div>
   );
