@@ -3,6 +3,9 @@
 export const PREDICTION_MARKET_ADDRESS = (import.meta.env.VITE_MARKET_ADDRESS ??
   "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
+export const USDC_ADDRESS = (import.meta.env.VITE_USDC_ADDRESS ??
+  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+
 export const predictionMarketAbi = [
   {
     type: "function",
