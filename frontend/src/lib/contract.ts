@@ -1,10 +1,10 @@
 // Fill this in after running `forge script script/Deploy.s.sol --broadcast` (see backend README).
 // Using an env var so you never have to hunt through source for this.
 export const PREDICTION_MARKET_ADDRESS = (import.meta.env.VITE_MARKET_ADDRESS ??
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  "0x330f0F8DFdfC5E172817aF032461e009574a9413") as `0x${string}`;
 
 export const USDC_ADDRESS = (import.meta.env.VITE_USDC_ADDRESS ??
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  "0x3600000000000000000000000000000000000000") as `0x${string}`;
 
 export const predictionMarketAbi = [
   {
