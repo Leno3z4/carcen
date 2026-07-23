@@ -20,10 +20,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r backend/resolver/requirements.txt
 
+      - name: Install Playwright browser
+        # pip install alone only gets the playwright package — this pulls the
+        # actual Chromium binary it drives, needed for X/TikTok scraping.
+        run: playwright install --with-deps chromium
+
       - name: Run resolver
         env:
           ARC_RPC_URL: https://rpc.testnet.arc.network
           MARKET_ADDRESS: ${{ secrets.MARKET_ADDRESS }}
           RESOLVER_PRIVATE_KEY: ${{ secrets.RESOLVER_PRIVATE_KEY }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
         working-directory: backend/resolver
         run: python resolver_once.py
