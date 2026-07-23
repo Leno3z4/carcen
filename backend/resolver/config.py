@@ -15,7 +15,7 @@ ARC_RPC_URL = os.environ.get("ARC_RPC_URL", "https://rpc.testnet.arc.network")
 # actually looks like a real address before trusting it.
 # NOTE: update this once the new MetricsMarket.sol (struct-param version) is deployed —
 # this default still points at whatever was last deployed, so don't assume it's current.
-_DEFAULT_MARKET_ADDRESS = "0x330f0F8DFdfC5E172817aF032461e009574a9413"
+_DEFAULT_MARKET_ADDRESS = "0xe4795352D2823B7596D0cBDCF06499f6E58466e6"
 _env_market_address = os.environ.get("MARKET_ADDRESS", "").strip()
 if _env_market_address.startswith("0x") and len(_env_market_address) == 42:
     MARKET_ADDRESS = _env_market_address
