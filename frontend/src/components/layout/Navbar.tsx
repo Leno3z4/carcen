@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import ConnectButton from "@/components/wallet/ConnectButton";
 
 const NAV_ITEMS = [
-  { label: "Home", path: "/" },
-  { label: "Markets", path: "/" },
-  { label: "Portfolio", path: "/portfolio" },
-  { label: "Profile", path: "/profile" },
-];
+  { label: "Home", to: "/" },
+  { label: "Markets", to: "/#markets" },
+  { label: "Portfolio", to: "/portfolio" },
+  { label: "Profile", to: "/profile" },
+] as const;
 
 export default function Navbar() {
   const location = useLocation();
@@ -18,19 +18,34 @@ export default function Navbar() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl"
+      className="fixed left-1/2 top-4 z-50 w-[min(96vw,1100px)] -translate-x-1/2"
     >
-      <div className="flex items-center justify-between rounded-2xl bg-[#161616] px-4 py-2.5 shadow-soft-lg">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-3 rounded-[24px] border border-white/10 bg-[#121212]/95 px-3 py-3 shadow-soft-lg backdrop-blur">
+        <Link
+          to="/"
+          className="hidden shrink-0 rounded-2xl px-3 py-2 text-sm font-semibold text-white/90 sm:flex"
+        >
+          Carcen
+        </Link>
+
+        <div className="flex flex-1 items-center justify-center gap-1 overflow-x-auto">
           {NAV_ITEMS.map((item) => {
-            const active = location.pathname === item.path;
+            const active =
+              item.to === "/"
+                ? location.pathname === "/" && location.hash !== "#markets"
+                : item.to === "/#markets"
+                  ? location.hash === "#markets"
+                  : location.pathname === item.to;
+
             return (
               <Link
                 key={item.label}
-                to={item.path}
+                to={item.to}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-                  active ? "bg-white text-black" : "text-white/70 hover:text-white"
+                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-white text-black"
+                    : "text-white/70 hover:text-white"
                 )}
               >
                 {item.label}
@@ -38,7 +53,10 @@ export default function Navbar() {
             );
           })}
         </div>
-        <ConnectButton />
+
+        <div className="shrink-0">
+          <ConnectButton />
+        </div>
       </div>
     </motion.nav>
   );
