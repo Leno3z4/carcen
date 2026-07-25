@@ -6,20 +6,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md" | "lg";
 }
 
-// Minimal hand-written primitive standing in for shadcn/ui's Button — same
-// visual intent (variants, sizes) without needing the shadcn CLI to
-// generate it, since this project can't reach npm registry to run that here.
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => {
     return (
       <button
-        ref={ref}
+        ref={refref}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors rounded-control disabled:opacity-50 disabled:pointer-events-none",
-          variant === "primary" && "bg-arc-blue text-white hover:bg-arc-blue/90",
-          variant === "secondary" && "bg-black/5 text-text-primary hover:bg-black/10",
+          "inline-flex items-center justify-center font-medium tracking-tight transition-all rounded-control disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]",
+          variant === "primary" && "bg-arc-blue text-white hover:bg-arc-blue-hover shadow-sm",
+          variant === "secondary" && "bg-black/5 text-text-primary hover:bg-black/10 border border-transparent",
           variant === "ghost" && "hover:bg-black/5 text-text-primary",
-          size === "sm" && "h-8 px-3 text-sm",
+          size === "sm" && "h-8 px-3 text-xs",
           size === "md" && "h-10 px-4 text-sm",
           size === "lg" && "h-12 px-6 text-base",
           className
