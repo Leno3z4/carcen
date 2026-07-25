@@ -4,6 +4,33 @@
 
 @layer base {
   body {
-    @apply bg-background text-text-primary font-sans antialiased;
+    @apply bg-background text-text-primary antialiased selection:bg-arc-blue-light selection:text-arc-blue;
+    letter-spacing: -0.01em;
   }
+
+  /* Custom scrollbar matching the minimal industrial aesthetic */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(17, 17, 17, 0.1);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(17, 17, 17, 0.2);
+  }
+}
+
+/* Utilitarian smooth loading skeletons */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; background-color: rgba(17, 17, 17, 0.03); }
+  50% { opacity: 0.6; background-color: rgba(17, 17, 17, 0.06); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
