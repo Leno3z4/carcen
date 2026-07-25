@@ -1,4 +1,4 @@
-import MarketCard from "./MarketCard";
+ import MarketCard from "./MarketCard";
 import { Skeleton } from "@/components/shared/Skeleton";
 import { Card } from "@/components/ui/Card";
 import type { Market } from "@/types/market";
@@ -6,9 +6,11 @@ import type { Market } from "@/types/market";
 export default function MarketGrid({
   markets,
   isLoading,
+  hasAnyMarkets,
 }: {
   markets: Market[];
   isLoading: boolean;
+  hasAnyMarkets: boolean;
 }) {
   if (isLoading) {
     return (
@@ -25,10 +27,14 @@ export default function MarketGrid({
       <Card className="flex min-h-[280px] items-center justify-center text-center">
         <div className="space-y-2">
           <p className="text-base font-medium text-text-primary">
-            No markets match your filters yet.
+            {hasAnyMarkets
+              ? "No markets match your filters."
+              : "No live markets yet — check back soon."}
           </p>
           <p className="text-sm text-text-secondary">
-            Clear the filters to see the full feed.
+            {hasAnyMarkets
+              ? "Clear the filters to see the full feed."
+              : "New markets appear here as soon as they're created."}
           </p>
         </div>
       </Card>
