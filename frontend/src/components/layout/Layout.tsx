@@ -1,11 +1,16 @@
-import { ReactNode } from "react";
+ import type { ReactNode } from "react";
 import Navbar from "./Navbar";
 
-export default function Layout({ children }: { children: ReactNode }) {
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-text-primary">
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+
+      <main className="mx-auto w-full max-w-7xl px-4 pt-28 pb-12 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
