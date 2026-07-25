@@ -1,5 +1,5 @@
-import { Platform, MetricType } from "@/types/market";
 import SearchBar from "@/components/shared/SearchBar";
+import { Platform, MetricType } from "@/types/market";
 import { cn } from "@/lib/utils";
 
 export interface FilterState {
@@ -9,30 +9,28 @@ export interface FilterState {
   maxDurationHours: number | "all";
 }
 
-const DURATION_OPTIONS: { label: string; hours: number }[] = [
-  { label: "1 Hour", hours: 1 },
-  { label: "3 Hours", hours: 3 },
-  { label: "6 Hours", hours: 6 },
-  { label: "10 Hours", hours: 10 },
-];
+interface Props {
+  filters: FilterState;
+  onChange: (filters: FilterState) => void;
+}
 
 function Pill({
   active,
-  onClick,
   children,
+  onClick,
 }: {
   active: boolean;
-  onClick: () => void;
   children: React.ReactNode;
+  onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        "rounded-full border px-4 py-2 text-sm transition-all",
         active
-          ? "bg-arc-blue text-white border-arc-blue"
-          : "bg-white text-text-secondary border-black/10 hover:border-black/20"
+          ? "border-arc-blue bg-arc-blue text-white"
+          : "border-border bg-card text-text-secondary hover:border-arc-blue hover:text-text-primary"
       )}
     >
       {children}
@@ -43,63 +41,70 @@ function Pill({
 export default function MarketFilters({
   filters,
   onChange,
-}: {
-  filters: FilterState;
-  onChange: (next: FilterState) => void;
-}) {
+}: Props) {
   return (
-    <div className="space-y-3 mb-6">
-      <SearchBar onSearch={(search) => onChange({ ...filters, search })} />
+    <div className="space-y-4">
+      <SearchBar
+        value={filters.search}
+        onChange={(value) =>
+          onChange({
+            ...filters,
+            search: value,
+          })
+        }
+        placeholder="Search creators..."
+      />
 
       <div className="flex flex-wrap gap-2">
-        <Pill active={filters.platform === "all"} onClick={() => onChange({ ...filters, platform: "all" })}>
+        <Pill
+          active={filters.platform === "all"}
+          onClick={() =>
+            onChange({
+              ...filters,
+              platform: "all",
+            })
+          }
+        >
           All Platforms
         </Pill>
+
         <Pill
           active={filters.platform === Platform.YOUTUBE}
-          onClick={() => onChange({ ...filters, platform: Platform.YOUTUBE })}
+          onClick={() =>
+            onChange({
+              ...filters,
+              platform: Platform.YOUTUBE,
+            })
+          }
         >
           YouTube
         </Pill>
-        <Pill active={filters.platform === Platform.X} onClick={() => onChange({ ...filters, platform: Platform.X })}>
-          X
-        </Pill>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Pill active={filters.metric === "all"} onClick={() => onChange({ ...filters, metric: "all" })}>
+        <Pill
+          active={filters.metric === "all"}
+          onClick={() =>
+            onChange({
+              ...filters,
+              metric: "all",
+            })
+          }
+        >
           All Metrics
         </Pill>
+
         <Pill
           active={filters.metric === MetricType.VIEWS}
-          onClick={() => onChange({ ...filters, metric: MetricType.VIEWS })}
+          onClick={() =>
+            onChange({
+              ...filters,
+              metric: MetricType.VIEWS,
+            })
+          }
         >
           Views
         </Pill>
-        <Pill
-          active={filters.metric === MetricType.FOLLOWERS}
-          onClick={() => onChange({ ...filters, metric: MetricType.FOLLOWERS })}
-        >
-          Followers
-        </Pill>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Pill
-          active={filters.maxDurationHours === "all"}
-          onClick={() => onChange({ ...filters, maxDurationHours: "all" })}
-        >
-          Any Duration
-        </Pill>
-        {DURATION_OPTIONS.map((opt) => (
-          <Pill
-            key={opt.hours}
-            active={filters.maxDurationHours === opt.hours}
-            onClick={() => onChange({ ...filters, maxDurationHours: opt.hours })}
-          >
-            {opt.label}
-          </Pill>
-        ))}
       </div>
     </div>
   );
