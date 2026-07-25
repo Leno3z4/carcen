@@ -1,63 +1,55 @@
-import { Link, useLocation } from "react-router-dom";
+ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import ConnectButton from "@/components/wallet/ConnectButton";
+import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { label: "Home", to: "/" },
-  { label: "Markets", to: "/#markets" },
-  { label: "Portfolio", to: "/portfolio" },
-  { label: "Profile", to: "/profile" },
-] as const;
+const navItems = [
+  { label: "Markets", href: "/" },
+  { label: "Portfolio", href: "/portfolio" },
+  { label: "Profile", href: "/profile" },
+];
 
 export default function Navbar() {
   const location = useLocation();
 
   return (
-    <motion.nav
-      initial={{ y: -20, opacity: 0 }}
+    <motion.header
+      initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="fixed left-1/2 top-4 z-50 w-[min(94vw,900px)] -translate-x-1/2"
+      transition={{ duration: 0.25 }}
+      className="fixed inset-x-0 top-4 z-50 flex justify-center px-4"
     >
-      <div className="flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-[#121212]/95 px-3 py-3 shadow-soft-lg backdrop-blur">
+      <div className="flex w-full max-w-7xl items-center justify-between rounded-2xl border border-border/60 bg-background/80 px-5 py-3 shadow-lg backdrop-blur-xl">
         <Link
           to="/"
-          className="hidden shrink-0 rounded-2xl px-3 py-2 text-sm font-semibold text-white/90 sm:flex"
+          className="flex items-center gap-2 text-lg font-semibold tracking-tight"
         >
-          Carcen
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-arc-blue text-white font-bold">
+            C
+          </div>
+
+          <span>Carcen</span>
         </Link>
 
-        <div className="flex flex-1 items-center justify-center gap-1 overflow-x-auto">
-          {NAV_ITEMS.map((item) => {
-            const active =
-              item.to === "/"
-                ? location.pathname === "/" && location.hash !== "#markets"
-                : item.to === "/#markets"
-                  ? location.hash === "#markets"
-                  : location.pathname === item.to;
+        <nav className="hidden items-center gap-2 md:flex">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+                location.pathname === item.href
+                  ? "bg-arc-blue text-white"
+                  : "text-text-secondary hover:bg-card hover:text-text-primary"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-            return (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-white text-black"
-                    : "text-white/70 hover:text-white"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="shrink-0">
-          <ConnectButton />
-        </div>
+        <ConnectButton />
       </div>
-    </motion.nav>
+    </motion.header>
   );
 }
