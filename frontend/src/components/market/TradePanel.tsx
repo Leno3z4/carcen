@@ -3,7 +3,8 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { parseEther } from "viem";
 import { Button } from "@/components/ui/Button";
 import type { Market } from "@/types/market";
-import { MARKET_ADDRESS, PREDICTION_MARKET_ABI } from "@/lib/contracts";
+import { MARKET_ADDRESS } from "@/lib/contract";
+import { PREDICTION_MARKET_ABI } from "@/lib/abi";
 
 export default function TradePanel({ market }: { market: Market }) {
   const { isConnected } = useAccount();
