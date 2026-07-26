@@ -1,17 +1,8 @@
- import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import ConnectButton from "@/components/wallet/ConnectButton";
-import { cn } from "@/lib/utils";
-
-const navItems = [
-  { label: "Markets", href: "/" },
-  { label: "Portfolio", href: "/portfolio" },
-  { label: "Profile", href: "/profile" },
-];
 
 export default function Navbar() {
-  const location = useLocation();
-
   return (
     <motion.header
       initial={{ y: -16, opacity: 0 }}
@@ -27,26 +18,8 @@ export default function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-arc-blue text-white font-bold">
             C
           </div>
-
           <span>Carcen</span>
         </Link>
-
-        <nav className="hidden items-center gap-2 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "rounded-xl px-4 py-2 text-sm font-medium transition-colors",
-                location.pathname === item.href
-                  ? "bg-arc-blue text-white"
-                  : "text-text-secondary hover:bg-card hover:text-text-primary"
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
 
         <ConnectButton />
       </div>
