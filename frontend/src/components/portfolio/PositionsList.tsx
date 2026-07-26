@@ -11,20 +11,37 @@ function PositionRow({ position }: { position: Position }) {
   return (
     <Link
       to={`/market/${position.marketId}`}
-      className="flex items-center justify-between py-3 border-b border-black/5 last:border-0"
+      className="flex items-center justify-between border-b border-black/5 py-3 last:border-0"
     >
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{position.question}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant={position.side === Outcome.YES ? "yes" : "no"}>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{position.question}</p>
+
+        <div className="mt-1 flex items-center gap-2">
+          <Badge
+            variant={
+              position.side === Outcome.YES
+                ? "success"
+                : "danger"
+            }
+          >
             {position.side === Outcome.YES ? "YES" : "NO"}
           </Badge>
-          <span className="text-xs text-text-secondary">{amount.toFixed(2)} USDC</span>
+
+          <span className="text-xs text-text-secondary">
+            {amount.toFixed(2)} USDC
+          </span>
         </div>
       </div>
+
       <div className="text-right text-xs text-text-secondary">
         {position.resolved ? (
-          <span className={position.won ? "text-emerald-600" : "text-red-500"}>
+          <span
+            className={
+              position.won
+                ? "text-emerald-600"
+                : "text-red-500"
+            }
+          >
             {position.won ? "Won" : "Lost"}
           </span>
         ) : (
@@ -35,37 +52,73 @@ function PositionRow({ position }: { position: Position }) {
   );
 }
 
-export default function PositionsList({ positions }: { positions: Position[] }) {
+export default function PositionsList({
+  positions,
+}: {
+  positions: Position[];
+}) {
   const open = positions.filter((p) => !p.resolved);
   const resolved = positions.filter((p) => p.resolved);
-  const claimable = resolved.filter((p) => p.won && !p.claimed);
+  const claimable = resolved.filter(
+    (p) => p.won && !p.claimed
+  );
 
   return (
     <div className="space-y-4">
       <Card>
-        <h3 className="text-sm font-semibold mb-1">Open Positions</h3>
+        <h3 className="mb-1 text-sm font-semibold">
+          Open Positions
+        </h3>
+
         {open.length === 0 ? (
-          <p className="text-sm text-text-secondary py-4">No open positions.</p>
+          <p className="py-4 text-sm text-text-secondary">
+            No open positions.
+          </p>
         ) : (
-          open.map((p) => <PositionRow key={`${p.marketId}-${p.side}`} position={p} />)
+          open.map((p) => (
+            <PositionRow
+              key={`${p.marketId}-${p.side}`}
+              position={p}
+            />
+          ))
         )}
       </Card>
 
       <Card>
-        <h3 className="text-sm font-semibold mb-1">Claimable Rewards</h3>
+        <h3 className="mb-1 text-sm font-semibold">
+          Claimable Rewards
+        </h3>
+
         {claimable.length === 0 ? (
-          <p className="text-sm text-text-secondary py-4">Nothing to claim right now.</p>
+          <p className="py-4 text-sm text-text-secondary">
+            Nothing to claim right now.
+          </p>
         ) : (
-          claimable.map((p) => <PositionRow key={`${p.marketId}-${p.side}`} position={p} />)
+          claimable.map((p) => (
+            <PositionRow
+              key={`${p.marketId}-${p.side}`}
+              position={p}
+            />
+          ))
         )}
       </Card>
 
       <Card>
-        <h3 className="text-sm font-semibold mb-1">Resolved Markets</h3>
+        <h3 className="mb-1 text-sm font-semibold">
+          Resolved Markets
+        </h3>
+
         {resolved.length === 0 ? (
-          <p className="text-sm text-text-secondary py-4">No resolved positions yet.</p>
+          <p className="py-4 text-sm text-text-secondary">
+            No resolved positions yet.
+          </p>
         ) : (
-          resolved.map((p) => <PositionRow key={`${p.marketId}-${p.side}`} position={p} />)
+          resolved.map((p) => (
+            <PositionRow
+              key={`${p.marketId}-${p.side}`}
+              position={p}
+            />
+          ))
         )}
       </Card>
     </div>
