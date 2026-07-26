@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { ChevronDown, LayoutDashboard, Copy, LogOut } from "lucide-react";
+import { ChevronDown, User, LayoutDashboard, Copy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { truncateAddress } from "@/lib/utils";
 
@@ -12,7 +12,6 @@ export default function ConnectButton() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close the dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -37,6 +36,14 @@ export default function ConnectButton() {
 
         {menuOpen && (
           <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-border bg-card p-1.5 shadow-soft-lg">
+            <Link
+              to="/profile"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-primary hover:bg-black/5"
+            >
+              <User className="h-4 w-4" />
+              Profile
+            </Link>
             <Link
               to="/portfolio"
               onClick={() => setMenuOpen(false)}
