@@ -18,7 +18,7 @@ export default function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-arc-blue text-white font-bold">
             C
           </div>
-          <span>Carcen</span>
+          <span>CarXen</span>
         </Link>
 
         <ConnectButton />
