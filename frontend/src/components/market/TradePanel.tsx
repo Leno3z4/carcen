@@ -3,7 +3,8 @@ import { useAccount, useWriteContract } from "wagmi";
 import { parseUnits } from "viem";
 import { Button } from "@/components/ui/Button";
 import type { Market } from "@/types/market";
-import { MARKET_ADDRESS, PREDICTION_MARKET_ABI } from "@/lib/contracts";
+import { MARKET_ADDRESS } from "@/lib/contract";
+import { PREDICTION_MARKET_ABI } from "@/lib/abi";
 
 export default function TradePanel({
   market,
@@ -26,7 +27,7 @@ export default function TradePanel({
       args: [
         BigInt(market.id),
         side === "YES" ? 0 : 1,
-        parseUnits(amount, 6), // USDC (6 decimals)
+        parseUnits(amount, 6),
       ],
     });
   };
