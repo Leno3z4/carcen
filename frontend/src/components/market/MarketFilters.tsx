@@ -45,11 +45,10 @@ export default function MarketFilters({
   return (
     <div className="space-y-4">
       <SearchBar
-        value={filters.search}
-        onChange={(value) =>
+        onSearch={(search: string) =>
           onChange({
             ...filters,
-            search: value,
+            search,
           })
         }
         placeholder="Search creators..."
