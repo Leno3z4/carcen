@@ -1,35 +1,38 @@
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
-import { parseUnits } from "viem";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther } from "viem";
 import { Button } from "@/components/ui/Button";
 import type { Market } from "@/types/market";
-import { MARKET_ADDRESS } from "@/lib/contract";
-import { PREDICTION_MARKET_ABI } from "@/lib/abi";
+import { MARKET_ADDRESS, PREDICTION_MARKET_ABI } from "@/lib/contracts";
 
-export default function TradePanel({
-  market,
-}: {
-  market: Market;
-}) {
+export default function TradePanel({ market }: { market: Market }) {
   const { isConnected } = useAccount();
-  const { writeContract, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const [amount, setAmount] = useState("");
   const [side, setSide] = useState<"YES" | "NO">("YES");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const busy = isSubmitting || isPending || isConfirming;
 
   const handleTrade = () => {
     if (!amount || Number(amount) <= 0) return;
+    if (busy) return;
 
-    writeContract({
-      address: MARKET_ADDRESS,
-      abi: PREDICTION_MARKET_ABI,
-      functionName: "deposit",
-      args: [
-        BigInt(market.id),
-        side === "YES" ? 1 : 2,
-      ],
-      value: parseUnits(amount, 6),
-    });
+    setIsSubmitting(true);
+    writeContract(
+      {
+        address: MARKET_ADDRESS,
+        abi: PREDICTION_MARKET_ABI,
+        functionName: "deposit",
+        args: [BigInt(market.id), side === "YES" ? 0 : 1],
+        value: parseEther(amount), // stake goes here, not as a function arg
+      },
+      {
+        onSettled: () => setIsSubmitting(false),
+      }
+    );
   };
 
   return (
@@ -60,10 +63,10 @@ export default function TradePanel({
 
       <Button
         className="w-full"
-        disabled={!isConnected || isPending}
+        disabled={!isConnected || busy || !amount || Number(amount) <= 0}
         onClick={handleTrade}
       >
-        {isPending ? "Submitting..." : `Trade ${side}`}
+        {isPending ? "Confirm in wallet..." : isConfirming ? "Confirming..." : `Trade ${side}`}
       </Button>
     </div>
   );
