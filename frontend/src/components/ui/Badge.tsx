@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "live" | "success" | "warning" | "danger";
 }
 
@@ -22,7 +22,7 @@ const variants = {
     "bg-red-500/10 border border-red-500/20 text-red-600",
 };
 
-export default function Badge({
+export function Badge({
   className,
   variant = "default",
   ...props
