@@ -26,9 +26,9 @@ export default function TradePanel({
       functionName: "deposit",
       args: [
         BigInt(market.id),
-        side === "YES" ? 0 : 1,
-        parseUnits(amount, 6),
+        side === "YES" ? 1 : 2,
       ],
+      value: parseUnits(amount, 6),
     });
   };
 
