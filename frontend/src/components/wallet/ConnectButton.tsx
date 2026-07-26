@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { ChevronDown, User, LayoutDashboard, Copy, LogOut } from "lucide-react";
+import { ChevronDown, User, Copy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { truncateAddress } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ export default function ConnectButton() {
   const { address, isConnected } = useAccount();
   const { connectors, connect, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -18,8 +19,14 @@ export default function ConnectButton() {
         setMenuOpen(false);
       }
     }
-    if (menuOpen) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
   }, [menuOpen]);
 
   if (isConnected && address) {
@@ -31,7 +38,11 @@ export default function ConnectButton() {
         >
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
           {truncateAddress(address)}
-          <ChevronDown className={`h-3.5 w-3.5 text-text-secondary transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-3.5 w-3.5 text-text-secondary transition-transform ${
+              menuOpen ? "rotate-180" : ""
+            }`}
+          />
         </button>
 
         {menuOpen && (
@@ -44,14 +55,7 @@ export default function ConnectButton() {
               <User className="h-4 w-4" />
               Profile
             </Link>
-            <Link
-              to="/portfolio"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-primary hover:bg-black/5"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Portfolio
-            </Link>
+
             <button
               onClick={() => {
                 navigator.clipboard.writeText(address);
@@ -62,7 +66,9 @@ export default function ConnectButton() {
               <Copy className="h-4 w-4" />
               Copy Address
             </button>
+
             <div className="my-1 h-px bg-border" />
+
             <button
               onClick={() => {
                 disconnect();
