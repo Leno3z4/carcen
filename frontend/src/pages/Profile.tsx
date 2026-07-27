@@ -51,10 +51,7 @@ export default function Profile() {
           Profile
         </h1>
 
-        <p className="mt-2 text-slate-500">
-          View your prediction history,
-          statistics and performance.
-        </p>
+        
 
       </section>
 
