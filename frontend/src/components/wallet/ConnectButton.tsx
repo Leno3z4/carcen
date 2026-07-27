@@ -8,7 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { truncateAddress } from "@/lib/utils";
 
 export default function ConnectButton() {
