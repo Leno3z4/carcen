@@ -3,34 +3,80 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-text-primary antialiased selection:bg-arc-blue-light selection:text-arc-blue;
-    letter-spacing: -0.01em;
+    @apply antialiased text-text-primary;
+    background:
+      radial-gradient(circle at top left, rgba(96,165,250,.14), transparent 35%),
+      radial-gradient(circle at top right, rgba(59,130,246,.08), transparent 30%),
+      linear-gradient(180deg,#f7fbff 0%,#eff7ff 100%);
+    letter-spacing: -.01em;
   }
 
-  /* Custom scrollbar matching the minimal industrial aesthetic */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  * {
+    @apply border-border;
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+
+  ::selection {
+    background:#bfdbfe;
+    color:#1d4ed8;
   }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(17, 17, 17, 0.1);
-    border-radius: 9999px;
+
+  ::-webkit-scrollbar{
+    width:8px;
+    height:8px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(17, 17, 17, 0.2);
+
+  ::-webkit-scrollbar-track{
+    background:transparent;
+  }
+
+  ::-webkit-scrollbar-thumb{
+    background:#cbdcf3;
+    border-radius:999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover{
+    background:#93c5fd;
   }
 }
 
-/* Utilitarian smooth loading skeletons */
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; background-color: rgba(17, 17, 17, 0.03); }
-  50% { opacity: 0.6; background-color: rgba(17, 17, 17, 0.06); }
+@layer components {
+
+  .glass-card{
+    @apply rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl;
+    box-shadow:
+      0 8px 30px rgba(15,23,42,.06),
+      0 1px 2px rgba(15,23,42,.04);
+  }
+
+  .section-title{
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  .page-container{
+    @apply mx-auto max-w-7xl px-6 lg:px-8;
+  }
 }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes floatUp{
+  from{
+    opacity:0;
+    transform:translateY(10px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.fade-up{
+  animation:floatUp .35s ease;
 }
