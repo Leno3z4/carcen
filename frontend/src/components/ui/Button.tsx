@@ -1,4 +1,4 @@
- import { forwardRef } from "react";
+import { forwardRef } from "react";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
@@ -9,19 +9,22 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    "bg-arc-blue text-white hover:bg-arc-blue/90 active:scale-[0.98]",
+    "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-[1px] active:translate-y-0",
+
   secondary:
-    "bg-card border border-border text-text-primary hover:bg-muted active:scale-[0.98]",
+    "border border-blue-100 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50",
+
   ghost:
-    "bg-transparent text-text-secondary hover:bg-card hover:text-text-primary",
+    "bg-transparent text-slate-600 hover:bg-blue-50 hover:text-blue-700",
+
   danger:
-    "bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]",
+    "bg-red-500 text-white hover:bg-red-600",
 };
 
 const sizes = {
-  sm: "h-9 px-3 text-sm rounded-xl",
-  md: "h-11 px-5 text-sm rounded-xl",
-  lg: "h-12 px-6 text-base rounded-2xl",
+  sm: "h-10 px-4 rounded-xl text-sm",
+  md: "h-11 px-5 rounded-2xl text-sm",
+  lg: "h-12 px-7 rounded-2xl text-base",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -34,21 +37,20 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ...props
     },
     ref
-  ) => {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        className={cn(
-          "inline-flex items-center justify-center font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50",
-          variants[variant],
-          sizes[size],
-          className
-        )}
-        {...props}
-      />
-    );
-  }
+  ) => (
+    <button
+      ref={ref}
+      type={type}
+      className={cn(
+        "inline-flex items-center justify-center font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50",
+        "focus:outline-none focus:ring-2 focus:ring-blue-300",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
+    />
+  )
 );
 
 Button.displayName = "Button";
