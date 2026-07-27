@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+
 import ProbabilityBar from "./ProbabilityBar";
 import CountdownTimer from "./CountdownTimer";
+
 import { formatMetric, formatUsdc } from "@/lib/utils";
 import { PLATFORM_LABELS, type Market } from "@/types/market";
 
@@ -14,8 +17,8 @@ function CreatorAvatar({ username }: { username: string }) {
 
   if (failed) {
     return (
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-xs font-semibold">
-        {username.slice(0, 1).toUpperCase()}
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 font-semibold text-white shadow">
+        {username.charAt(0).toUpperCase()}
       </div>
     );
   }
@@ -24,64 +27,123 @@ function CreatorAvatar({ username }: { username: string }) {
     <img
       src={`https://unavatar.io/youtube/${username}`}
       alt={username}
-      className="h-8 w-8 rounded-full bg-black/5 object-cover"
       onError={() => setFailed(true)}
+      className="h-11 w-11 rounded-2xl object-cover ring-2 ring-blue-100"
     />
   );
 }
 
 export default function MarketCard({ market }: { market: Market }) {
   const volume = market.yesPool + market.noPool;
-  const progressPct =
+
+  const progress =
     market.targetValue > 0n
       ? Math.min(
           100,
-          (Number(market.measuredValue) / Number(market.targetValue)) * 100
+          (Number(market.measuredValue) /
+            Number(market.targetValue)) *
+            100
         )
       : 0;
 
   return (
-    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.15 }}>
-      <Card className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <motion.div
+      whileHover={{ y: -6 }}
+      transition={{ duration: .2 }}
+    >
+      <Card className="overflow-hidden">
+
+        <div className="mb-5 flex items-center justify-between">
+
+          <div className="flex items-center gap-3">
+
             <CreatorAvatar username={market.username} />
+
             <div>
-              <div className="text-sm font-medium">{market.username}</div>
-              <div className="text-xs text-text-secondary">
+
+              <h3 className="font-semibold text-slate-900">
+                {market.username}
+              </h3>
+
+              <p className="text-xs text-slate-500">
                 {PLATFORM_LABELS[market.platform]}
-              </div>
+              </p>
+
             </div>
+
           </div>
-          <Badge variant="live">● Live</Badge>
+
+          <Badge variant="live">
+            LIVE
+          </Badge>
+
         </div>
 
-        <p className="text-sm font-medium leading-snug">{market.question}</p>
+        <h2 className="mb-5 text-lg font-semibold leading-7 text-slate-900">
+          {market.question}
+        </h2>
 
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-text-secondary">
-            <span>Current: {formatMetric(market.measuredValue)}</span>
-            <span>Target: {formatMetric(market.targetValue)}</span>
+        <div className="mb-4">
+
+          <div className="mb-2 flex justify-between text-xs text-slate-500">
+
+            <span>
+              {formatMetric(market.measuredValue)}
+            </span>
+
+            <span>
+              {formatMetric(market.targetValue)}
+            </span>
+
           </div>
 
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/5">
+          <div className="h-2 overflow-hidden rounded-full bg-blue-100">
+
             <div
-              className="h-full bg-arc-blue transition-all duration-500"
-              style={{ width: `${progressPct}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-600 transition-all duration-700"
+              style={{
+                width: `${progress}%`,
+              }}
             />
+
           </div>
+
         </div>
 
-        <ProbabilityBar yesPool={market.yesPool} noPool={market.noPool} />
+        <ProbabilityBar
+          yesPool={market.yesPool}
+          noPool={market.noPool}
+        />
 
-        <div className="flex items-center justify-between pt-1 text-xs text-text-secondary">
-          <span>Volume: {formatUsdc(volume, 0)} USDC</span>
-          <CountdownTimer closeTime={market.closeTime} />
+        <div className="mt-5 flex items-center justify-between text-sm">
+
+          <div>
+
+            <p className="text-slate-400">
+              Volume
+            </p>
+
+            <p className="font-semibold">
+              {formatUsdc(volume,0)} USDC
+            </p>
+
+          </div>
+
+          <CountdownTimer
+            closeTime={market.closeTime}
+          />
+
         </div>
 
-        <Link to={`/market/${market.id}`}>
-          <Button className="mt-1 w-full">Trade</Button>
+        <Link
+          to={`/market/${market.id}`}
+          className="block mt-6"
+        >
+          <Button className="w-full">
+            Trade Market
+          </Button>
         </Link>
+
       </Card>
     </motion.div>
   );
