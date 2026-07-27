@@ -59,7 +59,10 @@ def _fetch_youtube(channel_id: str, video_id: str, metric_type: str) -> int:
     youtube = build("youtube", "v3", developerKey=YT_API_KEY)
 
     if metric_type == "SUBSCRIBERS":
-        res = youtube.channels().list(part="statistics", id=channel_id).execute()
+        if channel_id.startswith("@"):
+            res = youtube.channels().list(part="statistics", forHandle=channel_id).execute()
+        else:
+            res = youtube.channels().list(part="statistics", id=channel_id).execute()
         return int(res["items"][0]["statistics"]["subscriberCount"])
 
     if metric_type == "VIEWS" and video_id:
