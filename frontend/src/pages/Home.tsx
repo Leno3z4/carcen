@@ -1,7 +1,8 @@
-  import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import MarketGrid from "@/components/market/MarketGrid";
-import MarketFilters, { type FilterState } from "@/components/market/MarketFilters";
-import { Card } from "@/components/ui/Card";
+import MarketFilters, {
+  type FilterState,
+} from "@/components/market/MarketFilters";
 import { useMarkets } from "@/hooks/useMarkets";
 
 export default function Home() {
@@ -14,66 +15,99 @@ export default function Home() {
     maxDurationHours: "all",
   });
 
-  const sourceMarkets = markets;
-
-  const filtered = useMemo(() => {
+  const filteredMarkets = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
 
-    return sourceMarkets.filter((m) => {
+    return markets.filter((m) => {
       if (
         filters.search &&
-        !m.username.toLowerCase().includes(filters.search.toLowerCase())
-      ) {
+        !m.username
+          .toLowerCase()
+          .includes(filters.search.toLowerCase())
+      )
         return false;
-      }
 
-      if (filters.platform !== "all" && m.platform !== filters.platform) {
+      if (
+        filters.platform !== "all" &&
+        m.platform !== filters.platform
+      )
         return false;
-      }
 
-      if (filters.metric !== "all" && m.metricType !== filters.metric) {
+      if (
+        filters.metric !== "all" &&
+        m.metricType !== filters.metric
+      )
         return false;
-      }
 
       if (filters.maxDurationHours !== "all") {
-        const remainingHours = (Number(m.closeTime) - now) / 3600;
-        if (remainingHours > filters.maxDurationHours) {
+        const hours =
+          (Number(m.closeTime) - now) / 3600;
+
+        if (hours > filters.maxDurationHours)
           return false;
-        }
       }
 
       return true;
     });
-  }, [sourceMarkets, filters]);
+  }, [markets, filters]);
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.24em] text-text-secondary">
-            Live Markets
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
-            Predict where YouTube views are headed next.
+    <div className="space-y-8">
+
+      <section className="overflow-hidden rounded-[34px] border border-blue-100 bg-gradient-to-br from-sky-50 via-blue-50 to-white p-10 shadow-[0_20px_60px_rgba(59,130,246,.10)]">
+
+        <div className="max-w-3xl">
+
+          <span className="rounded-full bg-blue-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">
+            Social Prediction Market
+          </span>
+
+          <h1 className="mt-6 text-5xl font-bold tracking-tight text-slate-900">
+            Predict creator growth before everyone else.
           </h1>
+
+          <p className="mt-5 text-lg leading-8 text-slate-600">
+            Trade prediction markets based on YouTube
+            creator performance using USDC.
+          </p>
+
+          <div className="mt-10 flex gap-10">
+
+            <div>
+              <p className="text-3xl font-bold text-slate-900">
+                {markets.length}
+              </p>
+              <p className="text-sm text-slate-500">
+                Active Markets
+              </p>
+            </div>
+
+            <div>
+              <p className="text-3xl font-bold text-slate-900">
+                24/7
+              </p>
+              <p className="text-sm text-slate-500">
+                Live Trading
+              </p>
+            </div>
+
+          </div>
+
         </div>
 
-        <div className="rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm text-text-secondary shadow-sm">
-          {filtered.length} markets
-        </div>
       </section>
 
-      <section id="markets" className="space-y-4">
-        <Card className="space-y-4">
-          <MarketFilters filters={filters} onChange={setFilters} />
-        </Card>
+      <MarketFilters
+        filters={filters}
+        onChange={setFilters}
+      />
 
-        <MarketGrid
-          markets={filtered}
-          isLoading={isLoading}
-          hasAnyMarkets={sourceMarkets.length > 0}
-        />
-      </section>
+      <MarketGrid
+        markets={filteredMarkets}
+        isLoading={isLoading}
+        hasAnyMarkets={markets.length > 0}
+      />
+
     </div>
   );
 }
