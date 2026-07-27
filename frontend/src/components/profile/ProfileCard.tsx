@@ -1,14 +1,43 @@
-import { useAccount, useBalance } from "wagmi";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { truncateAddress } from "@/lib/utils";
-import { Copy, Gift } from "lucide-react";
+import { useAccount } from "wagmi";
+import { motion } from "framer-motion";
+import {
+  Trophy,
+  Wallet,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 
-interface ProfileCardProps {
+interface Props {
   accuracy: number;
   marketsParticipated: number;
   totalWinnings: number;
   totalPnl: number;
+}
+
+function Stat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-4">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+        {icon}
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xl font-bold text-slate-900">
+        {value}
+      </p>
+    </div>
+  );
 }
 
 export default function ProfileCard({
@@ -16,73 +45,63 @@ export default function ProfileCard({
   marketsParticipated,
   totalWinnings,
   totalPnl,
-}: ProfileCardProps) {
+}: Props) {
   const { address } = useAccount();
-  const { data: balance } = useBalance({ address });
-
-  if (!address) {
-    return (
-      <Card>
-        <p className="text-sm text-text-secondary">Connect your wallet to view your profile.</p>
-      </Card>
-    );
-  }
 
   return (
-    <Card className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-14 w-14 rounded-full bg-black/5 flex items-center justify-center text-lg font-semibold">
-            {address.slice(2, 3).toUpperCase()}
-          </div>
-          <div>
-            <div className="font-semibold">{truncateAddress(address)}</div>
-            <div className="text-xs text-text-secondary">{address}</div>
-          </div>
-        </div>
-        <button
-          onClick={() => navigator.clipboard.writeText(address)}
-          className="text-text-secondary hover:text-text-primary"
-          title="Copy address"
-        >
-          <Copy className="h-4 w-4" />
-        </button>
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="overflow-hidden rounded-[30px] border border-blue-100 bg-white shadow-[0_20px_60px_rgba(59,130,246,.08)]"
+    >
+      <div className="h-24 bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500" />
 
-      <div className="grid grid-cols-3 gap-3 text-center">
-        <div>
-          <div className="text-lg font-semibold">{accuracy.toFixed(0)}%</div>
-          <div className="text-xs text-text-secondary">Accuracy</div>
+      <div className="-mt-10 px-6 pb-6">
+
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white shadow-lg">
+          <Wallet className="h-9 w-9 text-blue-600" />
         </div>
-        <div>
-          <div className="text-lg font-semibold">{marketsParticipated}</div>
-          <div className="text-xs text-text-secondary">Markets</div>
+
+        <div className="mt-5 text-center">
+
+          <h2 className="text-2xl font-bold text-slate-900">
+            Your Profile
+          </h2>
+
+          <p className="mt-2 break-all text-sm text-slate-500">
+            {address ?? "Wallet not connected"}
+          </p>
+
         </div>
-        <div>
-          <div className="text-lg font-semibold">{totalWinnings.toFixed(0)}</div>
-          <div className="text-xs text-text-secondary">Winnings (USDC)</div>
+
+        <div className="mt-8 space-y-4">
+
+          <Stat
+            icon={<Target size={20} />}
+            label="Accuracy"
+            value={`${accuracy.toFixed(1)}%`}
+          />
+
+          <Stat
+            icon={<TrendingUp size={20} />}
+            label="Markets"
+            value={marketsParticipated.toString()}
+          />
+
+          <Stat
+            icon={<Trophy size={20} />}
+            label="Winnings"
+            value={`${totalWinnings.toFixed(2)} USDC`}
+          />
+
+          <Stat
+            icon={<Wallet size={20} />}
+            label="P/L"
+            value={`${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)} USDC`}
+          />
+
         </div>
       </div>
-
-      <div className="grid grid-cols-2 gap-4 border-t border-black/5 pt-4">
-        <div>
-          <div className="text-xs text-text-secondary">Wallet Balance</div>
-          <div className="text-lg font-semibold">
-            {balance ? Number(balance.formatted).toFixed(2) : "0.00"} {balance?.symbol ?? "USDC"}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-text-secondary">Total P/L</div>
-          <div className={`text-lg font-semibold ${totalPnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {totalPnl >= 0 ? "+" : ""}
-            {totalPnl.toFixed(2)} USDC
-          </div>
-        </div>
-      </div>
-
-      <Button variant="secondary" className="w-full gap-2">
-        <Gift className="h-4 w-4" /> Claim Rewards
-      </Button>
-    </Card>
+    </motion.div>
   );
 }
