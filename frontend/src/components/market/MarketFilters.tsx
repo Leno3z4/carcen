@@ -27,10 +27,10 @@ function Pill({
     <button
       onClick={onClick}
       className={cn(
-        "rounded-full border px-4 py-2 text-sm transition-all",
+        "rounded-2xl border px-5 py-2.5 text-sm font-medium transition-all duration-200",
         active
-          ? "border-arc-blue bg-arc-blue text-white"
-          : "border-border bg-card text-text-secondary hover:border-arc-blue hover:text-text-primary"
+          ? "border-blue-500 bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-lg shadow-blue-500/20"
+          : "border-blue-100 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-slate-900"
       )}
     >
       {children}
@@ -43,7 +43,8 @@ export default function MarketFilters({
   onChange,
 }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 rounded-3xl border border-blue-100 bg-white/90 p-6 shadow-[0_12px_35px_rgba(59,130,246,.08)]">
+
       <SearchBar
         onSearch={(search: string) =>
           onChange({
@@ -51,59 +52,71 @@ export default function MarketFilters({
             search,
           })
         }
-        placeholder="Search creators..."
+        placeholder="Search YouTube creators..."
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Pill
-          active={filters.platform === "all"}
-          onClick={() =>
-            onChange({
-              ...filters,
-              platform: "all",
-            })
-          }
-        >
-          All Platforms
-        </Pill>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Platform
+        </p>
 
-        <Pill
-          active={filters.platform === Platform.YOUTUBE}
-          onClick={() =>
-            onChange({
-              ...filters,
-              platform: Platform.YOUTUBE,
-            })
-          }
-        >
-          YouTube
-        </Pill>
+        <div className="flex flex-wrap gap-3">
+          <Pill
+            active={filters.platform === "all"}
+            onClick={() =>
+              onChange({
+                ...filters,
+                platform: "all",
+              })
+            }
+          >
+            All
+          </Pill>
+
+          <Pill
+            active={filters.platform === Platform.YOUTUBE}
+            onClick={() =>
+              onChange({
+                ...filters,
+                platform: Platform.YOUTUBE,
+              })
+            }
+          >
+            YouTube
+          </Pill>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Pill
-          active={filters.metric === "all"}
-          onClick={() =>
-            onChange({
-              ...filters,
-              metric: "all",
-            })
-          }
-        >
-          All Metrics
-        </Pill>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Metric
+        </p>
 
-        <Pill
-          active={filters.metric === MetricType.VIEWS}
-          onClick={() =>
-            onChange({
-              ...filters,
-              metric: MetricType.VIEWS,
-            })
-          }
-        >
-          Views
-        </Pill>
+        <div className="flex flex-wrap gap-3">
+          <Pill
+            active={filters.metric === "all"}
+            onClick={() =>
+              onChange({
+                ...filters,
+                metric: "all",
+              })
+            }
+          >
+            All
+          </Pill>
+
+          <Pill
+            active={filters.metric === MetricType.VIEWS}
+            onClick={() =>
+              onChange({
+                ...filters,
+                metric: MetricType.VIEWS,
+              })
+            }
+          >
+            Views
+          </Pill>
+        </div>
       </div>
     </div>
   );
