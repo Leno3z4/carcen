@@ -1,8 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { ChevronDown, User, Copy, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import {
+  ChevronDown,
+  User,
+  Copy,
+  LogOut,
+} from "lucide-react";
+
+import Button from "@/components/ui/Button";
 import { truncateAddress } from "@/lib/utils";
 
 export default function ConnectButton() {
@@ -10,91 +16,132 @@ export default function ConnectButton() {
   const { connectors, connect, isPending } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
+    function close(e: MouseEvent) {
+      if (
+        ref.current &&
+        !ref.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
       }
     }
 
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClick);
-    }
+    document.addEventListener("mousedown", close);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [menuOpen]);
+    return () =>
+      document.removeEventListener(
+        "mousedown",
+        close
+      );
+  }, []);
 
-  if (isConnected && address) {
+  if (!isConnected || !address) {
+    const connector = connectors[0];
+
     return (
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-full bg-black/5 hover:bg-black/10 transition-colors px-3 py-1.5 text-sm text-text-primary"
-        >
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          {truncateAddress(address)}
-          <ChevronDown
-            className={`h-3.5 w-3.5 text-text-secondary transition-transform ${
-              menuOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-
-        {menuOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-border bg-card p-1.5 shadow-soft-lg">
-            <Link
-              to="/profile"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-primary hover:bg-black/5"
-            >
-              <User className="h-4 w-4" />
-              Profile
-            </Link>
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(address);
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-primary hover:bg-black/5"
-            >
-              <Copy className="h-4 w-4" />
-              Copy Address
-            </button>
-
-            <div className="my-1 h-px bg-border" />
-
-            <button
-              onClick={() => {
-                disconnect();
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-500 hover:bg-red-50"
-            >
-              <LogOut className="h-4 w-4" />
-              Disconnect
-            </button>
-          </div>
-        )}
-      </div>
+      <Button
+        onClick={() =>
+          connector &&
+          connect({ connector })
+        }
+        disabled={!connector || isPending}
+        className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 shadow-lg shadow-blue-500/20"
+      >
+        {isPending
+          ? "Connecting..."
+          : "Connect Wallet"}
+      </Button>
     );
   }
 
-  const connector = connectors[0];
-
   return (
-    <Button
-      size="sm"
-      onClick={() => connector && connect({ connector })}
-      disabled={isPending || !connector}
-      className="!bg-arc-blue !text-white hover:!bg-arc-blue-hover"
+    <div
+      ref={ref}
+      className="relative"
     >
-      {isPending ? "Connecting..." : "Connect Wallet"}
-    </Button>
+      <button
+        onClick={() => setOpen(!open)}
+        className="
+          flex
+          items-center
+          gap-3
+          rounded-full
+          border
+          border-blue-100
+          bg-white/90
+          px-4
+          py-2
+          shadow-md
+          backdrop-blur
+          transition
+          hover:shadow-lg
+        "
+      >
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+
+        <span className="font-medium">
+          {truncateAddress(address)}
+        </span>
+
+        <ChevronDown
+          className={`h-4 w-4 transition ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="
+            absolute
+            right-0
+            mt-3
+            w-56
+            overflow-hidden
+            rounded-2xl
+            border
+            border-blue-100
+            bg-white
+            shadow-2xl
+          "
+        >
+          <Link
+            to="/profile"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50"
+            onClick={() => setOpen(false)}
+          >
+            <User size={18} />
+            Profile
+          </Link>
+
+          <button
+            className="flex w-full items-center gap-3 px-4 py-3 hover:bg-blue-50"
+            onClick={() => {
+              navigator.clipboard.writeText(address);
+              setOpen(false);
+            }}
+          >
+            <Copy size={18} />
+            Copy Address
+          </button>
+
+          <div className="mx-4 border-t border-blue-100" />
+
+          <button
+            className="flex w-full items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50"
+            onClick={() => {
+              disconnect();
+              setOpen(false);
+            }}
+          >
+            <LogOut size={18} />
+            Disconnect
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
