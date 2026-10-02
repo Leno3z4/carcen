@@ -144,14 +144,14 @@ async function ensureApproval(
   publicClient: ReturnType<typeof createPublicClient>,
   walletClient: ReturnType<typeof createWalletClient>,
   env: Env,
-  owner: Address,
+  account: ReturnType<typeof privateKeyToAccount>,
   amount: bigint,
 ): Promise<void> {
   const allowance = await publicClient.readContract({
     address: env.USDC,
     abi: erc20Abi,
     functionName: "allowance",
-    args: [owner, env.QWAP_ROUTER],
+    args: [account.address, env.QWAP_ROUTER],
   });
 
   if (allowance >= amount) return;
@@ -161,7 +161,7 @@ async function ensureApproval(
     abi: erc20Abi,
     functionName: "approve",
     args: [env.QWAP_ROUTER, amount],
-    account: owner,
+    account,
   });
 
   await publicClient.waitForTransactionReceipt({ hash: approvalHash });
@@ -249,7 +249,7 @@ async function swapUsdcToQms(
     publicClient,
     walletClient,
     env,
-    account.address,
+    account,
     usdcBalance,
   );
 
