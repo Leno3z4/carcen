@@ -1008,7 +1008,11 @@ export default {
       throw new Error("Unknown cron trigger: " + event.cron);
     }
 
-    const minute = Math.floor(event.scheduledTime / 60_000);
+    // Use the Worker's current UTC clock for cadence decisions. Cloudflare documents
+    // scheduledTime as epoch milliseconds, but using Date.now() here makes the
+    // 40-minute cadence resilient to any serialization/unit differences in logs
+    // or event metadata.
+    const minute = Math.floor(Date.now() / 60_000);
     const liquidityEvery = Math.max(1, Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"));
     const swapDue = minute % 30 === 0;
     const liquidityDue = minute % liquidityEvery === 0;
@@ -1018,6 +1022,7 @@ export default {
         event: "cron_tick",
         cron: event.cron,
         scheduledTime: new Date(event.scheduledTime).toISOString(),
+        decisionTime: new Date().toISOString(),
         swapDue,
         liquidityDue,
         liquidityEveryMinutes: liquidityEvery,
