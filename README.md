@@ -58,3 +58,5 @@ The HTTP endpoint is a read-only health check. Swaps are triggered by the Cloudf
 ## Important
 
 QMS says the public testnet can be reset and that its test tokens have no monetary value. Use a dedicated burner/testnet account and do not send real funds to it.
+
+<!-- build trigger -->
