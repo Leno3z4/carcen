@@ -3,10 +3,10 @@ import {
   createWalletClient,
   http,
   parseEther,
-  privateKeyToAccount,
   type Address,
   type Hex,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 interface Env {
   QMS_RPC_URL: string;
