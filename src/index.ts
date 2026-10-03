@@ -747,40 +747,57 @@ async function runOnce(env: Env): Promise<void> {
 export default {
   async fetch(): Promise<Response> {
     return new Response(
-      "QMS/QWAP testnet worker is running. Swaps run every 30 minutes and WQMS/USDC liquidity runs on the 32-minute Cron trigger.",
+      "QMS/QWAP testnet worker is running. Swaps run every 30 minutes. Liquidity is scheduled on an exact 32-minute cadence.",
     );
   },
 
   async scheduled(
-    _event: ScheduledController,
+    event: ScheduledController,
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
-    const job =
-      _event.cron === "*/32 * * * *"
-        ? addWqmsUsdcLiquidity
-        : _event.cron === "*/30 * * * *"
-          ? runOnce
-          : null;
-
-    if (!job) {
-      throw new Error("Unknown cron trigger: " + _event.cron);
+    if (event.cron === "*/30 * * * *") {
+      ctx.waitUntil(
+        runOnce(env).catch((error) => {
+          console.error(
+            JSON.stringify({
+              event: "swap_error",
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            }),
+          );
+          throw error;
+        }),
+      );
+      return;
     }
 
-    ctx.waitUntil(
-      job(env).catch((error) => {
-        console.error(
-          JSON.stringify({
-            event:
-              _event.cron === "*/32 * * * *"
-                ? "liquidity_error"
-                : "swap_error",
-            message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-          }),
-        );
-        throw error;
-      }),
-    );
+    if (event.cron === "* * * * *") {
+      // Cloudflare Cron cannot express a true rolling 32-minute interval.
+      // Use the per-minute trigger as a lightweight scheduler tick and only
+      // execute liquidity on exact 32-minute UTC boundaries.
+      const minute = Math.floor(event.scheduledTime / 60_000);
+      const liquidityDue = minute % 32 === 0;
+
+      if (!liquidityDue) {
+        return;
+      }
+
+      ctx.waitUntil(
+        addWqmsUsdcLiquidity(env).catch((error) => {
+          console.error(
+            JSON.stringify({
+              event: "liquidity_error",
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            }),
+          );
+          throw error;
+        }),
+      );
+      return;
+    }
+
+    throw new Error("Unknown cron trigger: " + event.cron);
   },
 };
