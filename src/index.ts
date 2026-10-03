@@ -429,12 +429,36 @@ async function swapUsdcToQms(
 }
 
 
-async function addWqmsUsdcLiquidity(
-  publicClient: ReturnType<typeof createPublicClient>,
-  walletClient: ReturnType<typeof createWalletClient>,
-  env: Env,
-  account: ReturnType<typeof privateKeyToAccount>,
-): Promise<void> {
+async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
+  if (!env.WALLET_PRIVATE_KEY) {
+    throw new Error(
+      "WALLET_PRIVATE_KEY is missing. Set it with: wrangler secret put WALLET_PRIVATE_KEY",
+    );
+  }
+
+  if (Number(env.QMS_CHAIN_ID) !== 19480) {
+    throw new Error("Refusing to run on unexpected chain id " + env.QMS_CHAIN_ID);
+  }
+
+  const account = privateKeyToAccount(privateKey(env.WALLET_PRIVATE_KEY));
+  const transport = http(env.QMS_RPC_URL);
+  const chain = {
+    id: Number(env.QMS_CHAIN_ID),
+    name: "QMS Testnet",
+    nativeCurrency: { name: "QMS", symbol: "QMS", decimals: 18 },
+    rpcUrls: { default: { http: [env.QMS_RPC_URL] } },
+  } as const;
+
+  const publicClient = createPublicClient({ chain, transport });
+  const walletClient = createWalletClient({ account, chain, transport });
+
+  const chainId = await publicClient.getChainId();
+  if (chainId !== Number(env.QMS_CHAIN_ID)) {
+    throw new Error(
+      "RPC reported chain " + chainId + ", expected " + env.QMS_CHAIN_ID,
+    );
+  }
+
   const liquidityQms = parseEther(env.LIQUIDITY_QMS || "0.1");
   const fundingQms = parseEther(env.LIQUIDITY_FUND_QMS || "0.1");
   const reserveQms = parseEther(env.QMS_RESERVE || "0.5");
