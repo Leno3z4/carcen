@@ -29,17 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Install Worker secret
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          QWAP_TESTNET_PRIVATE_KEY: ${{ secrets.QWAP_TESTNET_PRIVATE_KEY }}
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test -n "$QWAP_TESTNET_PRIVATE_KEY"
-          printf '%s' "$QWAP_TESTNET_PRIVATE_KEY" | npx wrangler@4.146.0 secret put WALLET_PRIVATE_KEY
-
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
