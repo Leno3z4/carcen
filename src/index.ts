@@ -744,60 +744,200 @@ async function runOnce(env: Env): Promise<void> {
   }
 }
 
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body, null, 2), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function nextIntervalIso(intervalMinutes: number): string {
+  const nowMinute = Math.floor(Date.now() / 60_000);
+  let nextMinute = nowMinute + 1;
+  while (nextMinute % intervalMinutes !== 0) nextMinute += 1;
+  return new Date(nextMinute * 60_000).toISOString();
+}
+
+async function getStatus(env: Env): Promise<Record<string, unknown>> {
+  if (Number(env.QMS_CHAIN_ID) !== 19480) {
+    throw new Error(`Refusing to inspect unexpected chain id ${env.QMS_CHAIN_ID}`);
+  }
+
+  const transport = http(env.QMS_RPC_URL);
+  const chain = {
+    id: Number(env.QMS_CHAIN_ID),
+    name: "QMS Testnet",
+    nativeCurrency: { name: "QMS", symbol: "QMS", decimals: 18 },
+    rpcUrls: { default: { http: [env.QMS_RPC_URL] } },
+  } as const;
+  const publicClient = createPublicClient({ chain, transport });
+  const chainId = await publicClient.getChainId();
+
+  let wallet: Address | undefined;
+  let qmsBalance: bigint | undefined;
+  let wqmsBalance: bigint | undefined;
+  let usdcBalance: bigint | undefined;
+
+  if (env.WALLET_PRIVATE_KEY) {
+    const account = privateKeyToAccount(privateKey(env.WALLET_PRIVATE_KEY));
+    wallet = account.address;
+    qmsBalance = await publicClient.getBalance({ address: wallet });
+    wqmsBalance = await publicClient.readContract({
+      address: env.WQMS,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [wallet],
+    });
+    usdcBalance = await publicClient.readContract({
+      address: env.USDC,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [wallet],
+    });
+  }
+
+  const [token0, token1, reserves] = await Promise.all([
+    publicClient.readContract({
+      address: env.WQMS_USDC_PAIR,
+      abi: pairAbi,
+      functionName: "token0",
+    }),
+    publicClient.readContract({
+      address: env.WQMS_USDC_PAIR,
+      abi: pairAbi,
+      functionName: "token1",
+    }),
+    publicClient.readContract({
+      address: env.WQMS_USDC_PAIR,
+      abi: pairAbi,
+      functionName: "getReserves",
+    }),
+  ]);
+
+  return {
+    ok: chainId === Number(env.QMS_CHAIN_ID),
+    worker: "carcen",
+    network: "QMS Testnet",
+    chainId,
+    expectedChainId: Number(env.QMS_CHAIN_ID),
+    wallet: wallet ?? null,
+    balances: {
+      qmsWei: qmsBalance?.toString() ?? null,
+      wqmsWei: wqmsBalance?.toString() ?? null,
+      usdcBaseUnits: usdcBalance?.toString() ?? null,
+    },
+    pair: {
+      address: env.WQMS_USDC_PAIR,
+      token0,
+      token1,
+      reserve0: reserves[0].toString(),
+      reserve1: reserves[1].toString(),
+    },
+    schedule: {
+      cron: "* * * * *",
+      swapsEveryMinutes: 30,
+      liquidityEveryMinutes: 32,
+      nextSwapAt: nextIntervalIso(30),
+      nextLiquidityAt: nextIntervalIso(32),
+      timezone: "UTC",
+    },
+    endpoints: ["/", "/health", "/status"],
+  };
+}
+
 export default {
-  async fetch(): Promise<Response> {
-    return new Response(
-      "QMS/QWAP testnet worker is running. Swaps run every 30 minutes. Liquidity is scheduled on an exact 32-minute cadence.",
-    );
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/" || url.pathname === "/health") {
+      return jsonResponse({
+        ok: true,
+        worker: "carcen",
+        network: "QMS Testnet",
+        cron: "* * * * *",
+        swaps: "every 30 minutes",
+        liquidity: "every 32 minutes",
+        endpoints: {
+          health: "/health",
+          status: "/status",
+        },
+      });
+    }
+
+    if (url.pathname === "/status") {
+      try {
+        return jsonResponse(await getStatus(env));
+      } catch (error) {
+        return jsonResponse(
+          {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          500,
+        );
+      }
+    }
+
+    return jsonResponse({ ok: false, error: "Not found" }, 404);
   },
 
   async scheduled(
     event: ScheduledController,
     env: Env,
-    ctx: ExecutionContext,
   ): Promise<void> {
-    if (event.cron === "*/30 * * * *") {
-      ctx.waitUntil(
-        runOnce(env).catch((error) => {
-          console.error(
-            JSON.stringify({
-              event: "swap_error",
-              message: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined,
-            }),
-          );
-          throw error;
-        }),
-      );
-      return;
+    if (event.cron !== "* * * * *") {
+      throw new Error("Unknown cron trigger: " + event.cron);
     }
 
-    if (event.cron === "* * * * *") {
-      // Cloudflare Cron cannot express a true rolling 32-minute interval.
-      // Use the per-minute trigger as a lightweight scheduler tick and only
-      // execute liquidity on exact 32-minute UTC boundaries.
-      const minute = Math.floor(event.scheduledTime / 60_000);
-      const liquidityDue = minute % 32 === 0;
+    const minute = Math.floor(event.scheduledTime / 60_000);
+    const swapDue = minute % 30 === 0;
+    const liquidityDue = minute % 32 === 0;
 
-      if (!liquidityDue) {
-        return;
+    console.log(
+      JSON.stringify({
+        event: "cron_tick",
+        cron: event.cron,
+        scheduledTime: new Date(event.scheduledTime).toISOString(),
+        swapDue,
+        liquidityDue,
+      }),
+    );
+
+    // Both jobs use the same wallet/nonce space. If their schedules collide
+    // every 480 minutes, run them sequentially instead of racing transactions.
+    if (liquidityDue) {
+      try {
+        console.log(JSON.stringify({ event: "job_started", job: "liquidity" }));
+        await addWqmsUsdcLiquidity(env);
+        console.log(JSON.stringify({ event: "job_complete", job: "liquidity" }));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "liquidity_error",
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          }),
+        );
       }
-
-      ctx.waitUntil(
-        addWqmsUsdcLiquidity(env).catch((error) => {
-          console.error(
-            JSON.stringify({
-              event: "liquidity_error",
-              message: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined,
-            }),
-          );
-          throw error;
-        }),
-      );
-      return;
     }
 
-    throw new Error("Unknown cron trigger: " + event.cron);
+    if (swapDue) {
+      try {
+        console.log(JSON.stringify({ event: "job_started", job: "swap" }));
+        await runOnce(env);
+        console.log(JSON.stringify({ event: "job_complete", job: "swap" }));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "swap_error",
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          }),
+        );
+      }
+    }
   },
 };
