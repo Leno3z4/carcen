@@ -22,6 +22,10 @@ interface Env {
   WQMS_USDC_PAIR: Address;
   LIQUIDITY_QMS: string;
   LIQUIDITY_FUND_QMS: string;
+  LIQUIDITY_INTERVAL_MINUTES?: string;
+  QMS_EXPLORER_URL?: string;
+  TX_RECEIPT_TIMEOUT_MS?: string;
+  TX_POLLING_INTERVAL_MS?: string;
   WALLET_PRIVATE_KEY?: string;
 }
 
@@ -167,6 +171,108 @@ const wqmsWrapAbi = [
 
 const DEFAULT_SLIPPAGE_BPS = 500n;
 
+async function confirmTransaction(
+  publicClient: ReturnType<typeof createPublicClient>,
+  env: Env,
+  hash: Hex,
+  label: string,
+): Promise<void> {
+  const timeout = Math.max(
+    30_000,
+    Math.min(150_000, Number(env.TX_RECEIPT_TIMEOUT_MS || "150000")),
+  );
+  const pollingInterval = Math.max(
+    1_000,
+    Math.min(10_000, Number(env.TX_POLLING_INTERVAL_MS || "3000")),
+  );
+
+  try {
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash,
+      confirmations: 1,
+      timeout,
+      pollingInterval,
+    });
+    if (receipt.status !== "success") {
+      throw new Error(`${label} reverted: ${hash}`);
+    }
+    console.log(JSON.stringify({
+      event: "tx_confirmed",
+      label,
+      tx: hash,
+      confirmationSource: "rpc",
+      blockNumber: receipt.blockNumber.toString(),
+    }));
+    return;
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "tx_receipt_rpc_timeout",
+      label,
+      tx: hash,
+      message: error instanceof Error ? error.message : String(error),
+    }));
+  }
+
+  const explorer = (env.QMS_EXPLORER_URL || "https://testnet.qmsscan.io").replace(/\/$/, "");
+  try {
+    const response = await fetch(
+      `${explorer}/api/v2/transactions/${hash}`,
+      { headers: { accept: "application/json" } },
+    );
+    if (response.ok) {
+      const data = await response.json() as {
+        status?: string;
+        result?: string;
+        block_number?: number | null;
+        confirmations?: number;
+      };
+      if (data.status === "ok" || data.result === "success") {
+        console.log(JSON.stringify({
+          event: "tx_confirmed",
+          label,
+          tx: hash,
+          confirmationSource: "qmsscan",
+          blockNumber: data.block_number ?? null,
+          confirmations: data.confirmations ?? null,
+        }));
+        return;
+      }
+    }
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "tx_confirmation_fallback_error",
+      label,
+      tx: hash,
+      message: error instanceof Error ? error.message : String(error),
+    }));
+  }
+
+  throw new Error(`${label} was broadcast but no confirmed receipt was observed: ${hash}`);
+}
+
+async function rejectIfPending(
+  publicClient: ReturnType<typeof createPublicClient>,
+  account: ReturnType<typeof privateKeyToAccount>,
+): Promise<boolean> {
+  const [latest, pending] = await Promise.all([
+    publicClient.getTransactionCount({ address: account.address, blockTag: "latest" }),
+    publicClient.getTransactionCount({ address: account.address, blockTag: "pending" }),
+  ]);
+
+  if (pending > latest) {
+    console.log(JSON.stringify({
+      event: "skip",
+      reason: "wallet_has_pending_transaction",
+      wallet: account.address,
+      confirmedNonce: latest,
+      pendingNonce: pending,
+    }));
+    return true;
+  }
+
+  return false;
+}
+
 function privateKey(value: string): Hex {
   const key = value.trim();
   return (key.startsWith("0x") ? key : `0x${key}`) as Hex;
@@ -229,7 +335,7 @@ async function ensureApproval(
     account,
   });
 
-  await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+  await confirmTransaction(publicClient, env, approvalHash, "USDC approval");
   console.log(JSON.stringify({ event: "approval_confirmed", tx: approvalHash }));
 }
 
@@ -237,6 +343,7 @@ async function ensureApproval(
 async function ensureTokenApproval(
   publicClient: ReturnType<typeof createPublicClient>,
   walletClient: ReturnType<typeof createWalletClient>,
+  env: Env,
   token: Address,
   spender: Address,
   account: ReturnType<typeof privateKeyToAccount>,
@@ -259,7 +366,7 @@ async function ensureTokenApproval(
     account,
   });
 
-  await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+  await confirmTransaction(publicClient, env, approvalHash, `${token} approval`);
   console.log(
     JSON.stringify({
       event: "approval_confirmed",
@@ -306,10 +413,7 @@ async function swapQmsToUsdc(
     value: amountIn,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  if (receipt.status !== "success") {
-    throw new Error(`QMS -> USDC reverted: ${hash}`);
-  }
+  await confirmTransaction(publicClient, env, hash, "QMS -> USDC swap");
 
   console.log(
     JSON.stringify({
@@ -374,12 +478,7 @@ async function swapUsdcToQms(
     account,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({
-    hash: swapHash,
-  });
-  if (receipt.status !== "success") {
-    throw new Error(`USDC -> WQMS reverted: ${swapHash}`);
-  }
+  await confirmTransaction(publicClient, env, swapHash, "USDC -> WQMS swap");
 
   console.log(
     JSON.stringify({
@@ -411,12 +510,7 @@ async function swapUsdcToQms(
     account,
   });
 
-  const unwrapReceipt = await publicClient.waitForTransactionReceipt({
-    hash: unwrapHash,
-  });
-  if (unwrapReceipt.status !== "success") {
-    throw new Error(`WQMS -> QMS unwrap reverted: ${unwrapHash}`);
-  }
+  await confirmTransaction(publicClient, env, unwrapHash, "WQMS -> QMS unwrap");
 
   console.log(
     JSON.stringify({
@@ -458,6 +552,8 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
       "RPC reported chain " + chainId + ", expected " + env.QMS_CHAIN_ID,
     );
   }
+
+  if (await rejectIfPending(publicClient, account)) return;
 
   const liquidityQms = parseEther(env.LIQUIDITY_QMS || "0.1");
   const fundingQms = parseEther(env.LIQUIDITY_FUND_QMS || "0.1");
@@ -569,12 +665,12 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
       account,
       value: fundingQms,
     });
-    const fundingReceipt = await publicClient.waitForTransactionReceipt({
-      hash: fundingHash,
-    });
-    if (fundingReceipt.status !== "success") {
-      throw new Error("QMS -> USDC funding swap reverted: " + fundingHash);
-    }
+    await confirmTransaction(
+      publicClient,
+      env,
+      fundingHash,
+      "QMS -> USDC liquidity funding swap",
+    );
 
     usdcBalance = await publicClient.readContract({
       address: env.USDC,
@@ -623,16 +719,12 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
     account,
     value: liquidityQms,
   });
-  const wrapReceipt = await publicClient.waitForTransactionReceipt({
-    hash: wrapHash,
-  });
-  if (wrapReceipt.status !== "success") {
-    throw new Error("QMS -> WQMS wrap reverted: " + wrapHash);
-  }
+  await confirmTransaction(publicClient, env, wrapHash, "QMS -> WQMS wrap");
 
   await ensureTokenApproval(
     publicClient,
     walletClient,
+    env,
     env.WQMS,
     env.QWAP_ROUTER,
     account,
@@ -641,6 +733,7 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
   await ensureTokenApproval(
     publicClient,
     walletClient,
+    env,
     env.USDC,
     env.QWAP_ROUTER,
     account,
@@ -664,10 +757,7 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
     account,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  if (receipt.status !== "success") {
-    throw new Error("WQMS/USDC addLiquidity reverted: " + hash);
-  }
+  await confirmTransaction(publicClient, env, hash, "WQMS/USDC addLiquidity");
 
   console.log(
     JSON.stringify({
@@ -719,6 +809,8 @@ async function runOnce(env: Env): Promise<void> {
   if (chainId !== Number(env.QMS_CHAIN_ID)) {
     throw new Error(`RPC reported chain ${chainId}, expected ${env.QMS_CHAIN_ID}`);
   }
+
+  if (await rejectIfPending(publicClient, account)) return;
 
   const usdcBalance = await publicClient.readContract({
     address: env.USDC,
@@ -839,12 +931,12 @@ async function getStatus(env: Env): Promise<Record<string, unknown>> {
     schedule: {
       cron: "* * * * *",
       swapsEveryMinutes: 30,
-      liquidityEveryMinutes: 32,
+      liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"),
       nextSwapAt: nextIntervalIso(30),
-      nextLiquidityAt: nextIntervalIso(32),
+      nextLiquidityAt: nextIntervalIso(Number(env.LIQUIDITY_INTERVAL_MINUTES || "40")),
       timezone: "UTC",
     },
-    endpoints: ["/", "/health", "/status"],
+    endpoints: ["/", "/health", "/status", "/tx?hash=0x..."],
   };
 }
 
@@ -859,7 +951,7 @@ export default {
         network: "QMS Testnet",
         cron: "* * * * *",
         swaps: "every 30 minutes",
-        liquidity: "every 32 minutes",
+        liquidity: `every ${Number(env.LIQUIDITY_INTERVAL_MINUTES || "40")} minutes`,
         endpoints: {
           health: "/health",
           status: "/status",
@@ -881,7 +973,31 @@ export default {
       }
     }
 
-    return jsonResponse({ ok: false, error: "Not found" }, 404);
+    if (url.pathname === "/tx") {
+      const hash = url.searchParams.get("hash") || "";
+      if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
+        return jsonResponse({ ok: false, error: "Provide ?hash=0x<64 hex characters>" }, 400);
+      }
+      const explorer = (env.QMS_EXPLORER_URL || "https://testnet.qmsscan.io").replace(/\/$/, "");
+      try {
+        const response = await fetch(
+          `${explorer}/api/v2/transactions/${hash}`,
+          { headers: { accept: "application/json" } },
+        );
+        return new Response(await response.text(), {
+          status: response.status,
+          headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+        });
+      } catch (error) {
+        return jsonResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }, 502);
+      }
+    }
+
+    return jsonResponse({
+      ok: false,
+      error: "Not found",
+      endpoints: ["/health", "/status", "/tx?hash=0x..."],
+    }, 404);
   },
 
   async scheduled(
@@ -893,8 +1009,9 @@ export default {
     }
 
     const minute = Math.floor(event.scheduledTime / 60_000);
+    const liquidityEvery = Math.max(1, Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"));
     const swapDue = minute % 30 === 0;
-    const liquidityDue = minute % 32 === 0;
+    const liquidityDue = minute % liquidityEvery === 0;
 
     console.log(
       JSON.stringify({
@@ -903,6 +1020,7 @@ export default {
         scheduledTime: new Date(event.scheduledTime).toISOString(),
         swapDue,
         liquidityDue,
+        liquidityEveryMinutes: liquidityEvery,
       }),
     );
 
