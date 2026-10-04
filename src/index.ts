@@ -929,7 +929,7 @@ async function getStatus(env: Env): Promise<Record<string, unknown>> {
       reserve1: reserves[1].toString(),
     },
     schedule: {
-      cron: "* * * * *",
+      crons: ["*/20 * * * *", "*/30 * * * *"],
       swapsEveryMinutes: 30,
       liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"),
       nextSwapAt: nextIntervalIso(30),
