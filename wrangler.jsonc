@@ -20,7 +20,7 @@
     }
   },
   "triggers": {
-    "crons": ["* * * * *"]
+    "crons": ["*/20 * * * *", "*/30 * * * *"]
   },
   "vars": {
     "QMS_RPC_URL": "https://rpc.testnet.qms.finance",
