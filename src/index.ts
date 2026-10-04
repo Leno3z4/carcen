@@ -1004,18 +1004,18 @@ export default {
     event: ScheduledController,
     env: Env,
   ): Promise<void> {
-    if (event.cron !== "* * * * *") {
-      throw new Error("Unknown cron trigger: " + event.cron);
-    }
-
-    // Use the Worker's current UTC clock for cadence decisions. Cloudflare documents
-    // scheduledTime as epoch milliseconds, but using Date.now() here makes the
-    // 40-minute cadence resilient to any serialization/unit differences in logs
-    // or event metadata.
+    // Cloudflare passes the exact configured cron expression in event.cron.
+    // Accept the current schedules and the old */30 schedule during propagation,
+    // so an older trigger cannot be silently rejected by the new Worker code.
     const minute = Math.floor(Date.now() / 60_000);
     const liquidityEvery = Math.max(1, Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"));
-    const swapDue = minute % 30 === 0;
-    const liquidityDue = minute % liquidityEvery === 0;
+    const isEveryMinute = event.cron === "* * * * *";
+    const isSwapTrigger = event.cron === "*/30 * * * *";
+    const isLiquidityTrigger = event.cron === "*/20 * * * *";
+    const swapDue = isSwapTrigger || (isEveryMinute && minute % 30 === 0);
+    const liquidityDue =
+      isLiquidityTrigger && minute % liquidityEvery === 0 ||
+      isEveryMinute && minute % liquidityEvery === 0;
 
     console.log(
       JSON.stringify({
