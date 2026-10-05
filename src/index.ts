@@ -929,7 +929,7 @@ async function getStatus(env: Env): Promise<Record<string, unknown>> {
       reserve1: reserves[1].toString(),
     },
     schedule: {
-      crons: ["*/20 * * * *", "*/30 * * * *"],
+      crons: ["* * * * *"],
       swapsEveryMinutes: 30,
       liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"),
       nextSwapAt: nextIntervalIso(30),
@@ -1025,6 +1025,8 @@ export default {
     );
 
     // Run jobs sequentially because both use the same wallet/nonce space.
+    // Preserve both job attempts, but surface a failure to Cloudflare after they finish.
+    const jobErrors: string[] = [];
     if (liquidityDue) {
       try {
         console.log(JSON.stringify({ event: "job_started", job: "liquidity" }));
@@ -1038,6 +1040,7 @@ export default {
             stack: error instanceof Error ? error.stack : undefined,
           }),
         );
+        jobErrors.push(`liquidity: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -1054,7 +1057,12 @@ export default {
             stack: error instanceof Error ? error.stack : undefined,
           }),
         );
+        jobErrors.push(`swap: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+
+    if (jobErrors.length > 0) {
+      throw new Error(jobErrors.join("; "));
     }
   },
 };
