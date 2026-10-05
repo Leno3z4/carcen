@@ -1004,18 +1004,13 @@ export default {
     event: ScheduledController,
     env: Env,
   ): Promise<void> {
-    // Cloudflare passes the exact configured cron expression in event.cron.
-    // Accept the current schedules and the old */30 schedule during propagation,
-    // so an older trigger cannot be silently rejected by the new Worker code.
-    const minute = Math.floor(Date.now() / 60_000);
+    // Use one Cron Trigger every minute. This avoids separate trigger
+    // invocations racing for the same wallet nonce at minute 00.
+    // Cloudflare's scheduledTime is the authoritative scheduled minute.
+    const scheduledMinute = Math.floor(event.scheduledTime / 60_000);
     const liquidityEvery = Math.max(1, Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"));
-    const isEveryMinute = event.cron === "* * * * *";
-    const isSwapTrigger = event.cron === "*/30 * * * *";
-    const isLiquidityTrigger = event.cron === "*/20 * * * *";
-    const swapDue = isSwapTrigger || (isEveryMinute && minute % 30 === 0);
-    const liquidityDue =
-      isLiquidityTrigger && minute % liquidityEvery === 0 ||
-      isEveryMinute && minute % liquidityEvery === 0;
+    const swapDue = scheduledMinute % 30 === 0;
+    const liquidityDue = scheduledMinute % liquidityEvery === 0;
 
     console.log(
       JSON.stringify({
@@ -1029,8 +1024,7 @@ export default {
       }),
     );
 
-    // Both jobs use the same wallet/nonce space. If their schedules collide
-    // every 480 minutes, run them sequentially instead of racing transactions.
+    // Run jobs sequentially because both use the same wallet/nonce space.
     if (liquidityDue) {
       try {
         console.log(JSON.stringify({ event: "job_started", job: "liquidity" }));
