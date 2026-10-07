@@ -931,9 +931,9 @@ async function getStatus(env: Env): Promise<Record<string, unknown>> {
     schedule: {
       crons: ["* * * * *"],
       swapsEveryMinutes: 30,
-      liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"),
+      liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "10"),
       nextSwapAt: nextIntervalIso(30),
-      nextLiquidityAt: nextIntervalIso(Number(env.LIQUIDITY_INTERVAL_MINUTES || "40")),
+      nextLiquidityAt: nextIntervalIso(Number(env.LIQUIDITY_INTERVAL_MINUTES || "10")),
       timezone: "UTC",
     },
     endpoints: ["/", "/health", "/status", "/tx?hash=0x..."],
@@ -951,7 +951,7 @@ export default {
         network: "QMS Testnet",
         cron: "* * * * *",
         swaps: "every 30 minutes",
-        liquidity: `every ${Number(env.LIQUIDITY_INTERVAL_MINUTES || "40")} minutes`,
+        liquidity: `every ${Number(env.LIQUIDITY_INTERVAL_MINUTES || "10")} minutes`,
         endpoints: {
           health: "/health",
           status: "/status",
@@ -1004,12 +1004,15 @@ export default {
     event: ScheduledController,
     env: Env,
   ): Promise<void> {
-    // Use Cloudflare's native schedules directly. This avoids relying on
-    // a once-per-minute trigger to emulate the job schedules.
+    // One-minute Cloudflare trigger; derive the actual job cadence here.
+    // This keeps swaps and LPs on deterministic UTC minute boundaries.
     const scheduledMinute = Math.floor(Date.now() / 60_000);
-    const swapDue = event.cron === "*/30 * * * *";
-    const liquidityDue = event.cron === "*/40 * * * *";
-    const liquidityEvery = 40;
+    const liquidityEvery = Math.max(
+      1,
+      Number(env.LIQUIDITY_INTERVAL_MINUTES || "10"),
+    );
+    const swapDue = scheduledMinute % 30 === 0;
+    const liquidityDue = scheduledMinute % liquidityEvery === 0;
 
     console.log(
       JSON.stringify({
@@ -1020,6 +1023,7 @@ export default {
         swapDue,
         liquidityDue,
         liquidityEveryMinutes: liquidityEvery,
+        decisionMinute: scheduledMinute,
       }),
     );
 
