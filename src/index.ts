@@ -942,10 +942,10 @@ async function getStatus(env: Env): Promise<Record<string, unknown>> {
       reserve1: reserves[1].toString(),
     },
     schedule: {
-      crons: ["* * * * *"],
-      swapsEveryMinutes: 30,
+      crons: ["*/10 * * * *"],
+      swapsEveryMinutes: 10,
       liquidityEveryMinutes: Number(env.LIQUIDITY_INTERVAL_MINUTES || "10"),
-      nextSwapAt: nextIntervalIso(30),
+      nextSwapAt: nextIntervalIso(10),
       nextLiquidityAt: nextIntervalIso(Number(env.LIQUIDITY_INTERVAL_MINUTES || "10")),
       timezone: "UTC",
     },
@@ -963,7 +963,7 @@ export default {
         worker: "carcen",
         network: "QMS Testnet",
         cron: "* * * * *",
-        swaps: "every 30 minutes",
+        swaps: "every 10 minutes",
         liquidity: `every ${Number(env.LIQUIDITY_INTERVAL_MINUTES || "10")} minutes`,
         endpoints: {
           health: "/health",
@@ -1017,14 +1017,13 @@ export default {
     event: ScheduledController,
     env: Env,
   ): Promise<void> {
-    // One-minute Cloudflare trigger; derive the actual job cadence here.
-    // This keeps swaps and LPs on deterministic UTC minute boundaries.
+    // Cloudflare trigger runs every 10 minutes; both jobs share the same cadence.
     const scheduledMinute = Math.floor(Date.now() / 60_000);
     const liquidityEvery = Math.max(
       1,
       Number(env.LIQUIDITY_INTERVAL_MINUTES || "10"),
     );
-    const swapDue = scheduledMinute % 30 === 0;
+    const swapDue = scheduledMinute % 10 === 0;
     const liquidityDue = scheduledMinute % liquidityEvery === 0;
 
     console.log(
