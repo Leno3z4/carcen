@@ -759,6 +759,19 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
     await confirmTransaction(publicClient, env, unwrapHash, "LP cycle WQMS -> QMS unwrap");
   }
 
+  // Close the loop: convert the USDC returned by removeLiquidity back to QMS.
+  // That restores the wallet to the native-QMS side for the next cycle instead
+  // of accumulating USDC and eventually starving the LP routine of QMS.
+  const returnedUsdc = await publicClient.readContract({
+    address: env.USDC,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+  if (returnedUsdc > BigInt(env.USDC_DUST || "1")) {
+    await swapUsdcToQms(publicClient, walletClient, env, account);
+  }
+
   console.log(JSON.stringify({
     event: "liquidity_cycle_complete",
     swapTx: swapHash,
