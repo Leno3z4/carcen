@@ -129,6 +129,24 @@ const liquidityRouterAbi = [
       { name: "liquidity", type: "uint256" },
     ],
   },
+  {
+    type: "function",
+    name: "removeLiquidity",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
+      { name: "liquidity", type: "uint256" },
+      { name: "amountAMin", type: "uint256" },
+      { name: "amountBMin", type: "uint256" },
+      { name: "to", type: "address" },
+      { name: "deadline", type: "uint256" },
+    ],
+    outputs: [
+      { name: "amountA", type: "uint256" },
+      { name: "amountB", type: "uint256" },
+    ],
+  },
 ] as const;
 
 const pairAbi = [
@@ -556,162 +574,64 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
   if (await rejectIfPending(publicClient, account)) return;
 
   const liquidityQms = parseEther(env.LIQUIDITY_QMS || "0.1");
-  const fundingQms = parseEther(env.LIQUIDITY_FUND_QMS || "0.1");
   const reserveQms = parseEther(env.QMS_RESERVE || "0.5");
 
-  const pairToken0 = await publicClient.readContract({
-    address: env.WQMS_USDC_PAIR,
-    abi: pairAbi,
-    functionName: "token0",
-  });
-  const pairToken1 = await publicClient.readContract({
-    address: env.WQMS_USDC_PAIR,
-    abi: pairAbi,
-    functionName: "token1",
-  });
-  const [reserve0, reserve1] = await publicClient.readContract({
-    address: env.WQMS_USDC_PAIR,
-    abi: pairAbi,
-    functionName: "getReserves",
-  });
+  console.log(JSON.stringify({
+    event: "liquidity_cycle_started",
+    step: "swap_qms_to_usdc",
+    qmsAmount: liquidityQms.toString(),
+    reserveQms: reserveQms.toString(),
+  }));
 
-  const wqms = env.WQMS.toLowerCase();
-  const usdc = env.USDC.toLowerCase();
-  let usdcDesired: bigint;
-
-  if (pairToken0.toLowerCase() === wqms && pairToken1.toLowerCase() === usdc) {
-    usdcDesired = (reserve1 * liquidityQms) / reserve0;
-  } else if (
-    pairToken0.toLowerCase() === usdc &&
-    pairToken1.toLowerCase() === wqms
-  ) {
-    usdcDesired = (reserve0 * liquidityQms) / reserve1;
-  } else {
+  // The LP cycle deliberately performs a real QMS -> USDC swap first.
+  // The resulting USDC is paired with the same amount of WQMS.
+  const nativeBalance = await publicClient.getBalance({ address: account.address });
+  if (nativeBalance < liquidityQms * 2n + reserveQms) {
     throw new Error(
-      "Configured WQMS/USDC pair has unexpected tokens: " +
-        pairToken0 +
-        "/" +
-        pairToken1,
+      `insufficient QMS for liquidity cycle: need at least ${(liquidityQms * 2n + reserveQms).toString()}, have ${nativeBalance.toString()}`,
     );
   }
 
-  if (usdcDesired <= 0n) {
-    throw new Error("WQMS/USDC pool returned no usable USDC liquidity quote");
-  }
-
-  let nativeBalance = await publicClient.getBalance({ address: account.address });
-  let usdcBalance = await publicClient.readContract({
+  const path: Address[] = [env.WQMS, env.USDC];
+  const quotedUsdc = await quote(publicClient, env, liquidityQms, path);
+  const usdcBefore = await publicClient.readContract({
     address: env.USDC,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: [account.address],
   });
 
-  console.log(
-    JSON.stringify({
-      event: "liquidity_plan",
-      pool: env.WQMS_USDC_PAIR,
-      qmsToDeposit: liquidityQms.toString(),
-      usdcDesired: usdcDesired.toString(),
-      usdcBalance: usdcBalance.toString(),
-    }),
-  );
+  const swapHash = await walletClient.writeContract({
+    address: env.QWAP_ROUTER,
+    abi: qwapRouterAbi,
+    functionName: "swapExactETHForTokens",
+    args: [minOut(quotedUsdc, env), path, account.address, deadline(env)],
+    account,
+    value: liquidityQms,
+  });
+  await confirmTransaction(publicClient, env, swapHash, "LP cycle QMS -> USDC");
 
-  if (usdcBalance < usdcDesired) {
-    const requiredNative = liquidityQms + fundingQms + reserveQms;
-    if (nativeBalance < requiredNative) {
-      console.log(
-        JSON.stringify({
-          event: "skip",
-          reason: "insufficient_qms_for_liquidity_and_usdc_funding",
-          balance: nativeBalance.toString(),
-          required: requiredNative.toString(),
-        }),
-      );
-      return;
-    }
-
-    const fundingQuote = await quote(
-      publicClient,
-      env,
-      fundingQms,
-      [env.WQMS, env.USDC],
-    );
-    const deficit = usdcDesired - usdcBalance;
-    if (fundingQuote < deficit) {
-      console.log(
-        JSON.stringify({
-          event: "skip",
-          reason: "configured_qms_funding_would_not_cover_usdc_requirement",
-          fundingQms: fundingQms.toString(),
-          quotedUsdc: fundingQuote.toString(),
-          deficitUsdc: deficit.toString(),
-        }),
-      );
-      return;
-    }
-
-    const fundingMinOut = minOut(fundingQuote, env);
-    const fundingHash = await walletClient.writeContract({
-      address: env.QWAP_ROUTER,
-      abi: qwapRouterAbi,
-      functionName: "swapExactETHForTokens",
-      args: [
-        fundingMinOut,
-        [env.WQMS, env.USDC],
-        account.address,
-        deadline(env),
-      ],
-      account,
-      value: fundingQms,
-    });
-    await confirmTransaction(
-      publicClient,
-      env,
-      fundingHash,
-      "QMS -> USDC liquidity funding swap",
-    );
-
-    usdcBalance = await publicClient.readContract({
-      address: env.USDC,
-      abi: erc20Abi,
-      functionName: "balanceOf",
-      args: [account.address],
-    });
-    nativeBalance = await publicClient.getBalance({ address: account.address });
-
-    if (usdcBalance < usdcDesired) {
-      console.log(
-        JSON.stringify({
-          event: "skip",
-          reason: "usdc_requirement_still_not_met_after_funding_swap",
-          usdcBalance: usdcBalance.toString(),
-          required: usdcDesired.toString(),
-        }),
-      );
-      return;
-    }
-
-    console.log(
-      JSON.stringify({
-        event: "liquidity_funding_swap_confirmed",
-        qmsIn: fundingQms.toString(),
-        quotedUsdc: fundingQuote.toString(),
-        tx: fundingHash,
-      }),
-    );
-  } else if (nativeBalance < liquidityQms + reserveQms) {
-    console.log(
-      JSON.stringify({
-        event: "skip",
-        reason: "insufficient_qms_for_liquidity_plus_reserve",
-        balance: nativeBalance.toString(),
-        required: (liquidityQms + reserveQms).toString(),
-      }),
-    );
-    return;
+  const usdcAfterSwap = await publicClient.readContract({
+    address: env.USDC,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+  const usdcReceived = usdcAfterSwap - usdcBefore;
+  if (usdcReceived <= 0n) {
+    throw new Error("LP cycle QMS -> USDC completed but produced no USDC");
   }
 
+  console.log(JSON.stringify({
+    event: "liquidity_cycle_step",
+    step: "swap_confirmed",
+    tx: swapHash,
+    qmsIn: liquidityQms.toString(),
+    quotedUsdc: quotedUsdc.toString(),
+    usdcReceived: usdcReceived.toString(),
+  }));
+
+  // Convert the QMS side into WQMS for the ERC-20/USDC pool.
   const wrapHash = await walletClient.writeContract({
     address: env.WQMS,
     abi: wqmsWrapAbi,
@@ -719,7 +639,7 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
     account,
     value: liquidityQms,
   });
-  await confirmTransaction(publicClient, env, wrapHash, "QMS -> WQMS wrap");
+  await confirmTransaction(publicClient, env, wrapHash, "LP cycle QMS -> WQMS wrap");
 
   await ensureTokenApproval(
     publicClient,
@@ -737,10 +657,24 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
     env.USDC,
     env.QWAP_ROUTER,
     account,
-    usdcDesired,
+    usdcReceived,
   );
 
-  const hash = await walletClient.writeContract({
+  const lpBefore = await publicClient.readContract({
+    address: env.WQMS_USDC_PAIR,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+
+  console.log(JSON.stringify({
+    event: "liquidity_cycle_step",
+    step: "add_liquidity",
+    wqmsDesired: liquidityQms.toString(),
+    usdcDesired: usdcReceived.toString(),
+  }));
+
+  const addHash = await walletClient.writeContract({
     address: env.QWAP_ROUTER,
     abi: liquidityRouterAbi,
     functionName: "addLiquidity",
@@ -748,26 +682,92 @@ async function addWqmsUsdcLiquidity(env: Env): Promise<void> {
       env.WQMS,
       env.USDC,
       liquidityQms,
-      usdcDesired,
+      usdcReceived,
       minOut(liquidityQms, env),
-      minOut(usdcDesired, env),
+      minOut(usdcReceived, env),
       account.address,
       deadline(env),
     ],
     account,
   });
+  await confirmTransaction(publicClient, env, addHash, "WQMS/USDC addLiquidity");
 
-  await confirmTransaction(publicClient, env, hash, "WQMS/USDC addLiquidity");
+  const lpAfter = await publicClient.readContract({
+    address: env.WQMS_USDC_PAIR,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+  const mintedLp = lpAfter - lpBefore;
+  if (mintedLp <= 0n) {
+    throw new Error("addLiquidity confirmed but no LP tokens were minted");
+  }
 
-  console.log(
-    JSON.stringify({
-      event: "liquidity_confirmed",
-      pair: env.WQMS_USDC_PAIR,
-      qmsDeposited: liquidityQms.toString(),
-      usdcDeposited: usdcDesired.toString(),
-      tx: hash,
-    }),
+  console.log(JSON.stringify({
+    event: "liquidity_cycle_step",
+    step: "add_liquidity_confirmed",
+    tx: addHash,
+    mintedLp: mintedLp.toString(),
+  }));
+
+  // Immediately remove the LP we just created. This leaves the wallet ready
+  // for the next cycle while still producing a genuine add/remove LP sequence.
+  await ensureTokenApproval(
+    publicClient,
+    walletClient,
+    env,
+    env.WQMS_USDC_PAIR,
+    env.QWAP_ROUTER,
+    account,
+    mintedLp,
   );
+
+  const removeHash = await walletClient.writeContract({
+    address: env.QWAP_ROUTER,
+    abi: liquidityRouterAbi,
+    functionName: "removeLiquidity",
+    args: [
+      env.WQMS,
+      env.USDC,
+      mintedLp,
+      0n,
+      0n,
+      account.address,
+      deadline(env),
+    ],
+    account,
+  });
+  await confirmTransaction(publicClient, env, removeHash, "WQMS/USDC removeLiquidity");
+
+  // Convert all returned WQMS back to native QMS so the next cycle can swap
+  // QMS -> USDC again.
+  const returnedWqms = await publicClient.readContract({
+    address: env.WQMS,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+
+  if (returnedWqms > 0n) {
+    const unwrapHash = await walletClient.writeContract({
+      address: env.WQMS,
+      abi: wqmsAbi,
+      functionName: "withdraw",
+      args: [returnedWqms],
+      account,
+    });
+    await confirmTransaction(publicClient, env, unwrapHash, "LP cycle WQMS -> QMS unwrap");
+  }
+
+  console.log(JSON.stringify({
+    event: "liquidity_cycle_complete",
+    swapTx: swapHash,
+    addLiquidityTx: addHash,
+    removeLiquidityTx: removeHash,
+    qmsSwapped: liquidityQms.toString(),
+    usdcReceived: usdcReceived.toString(),
+    lpMinted: mintedLp.toString(),
+  }));
 }
 
 async function runOnce(env: Env): Promise<void> {
@@ -1006,7 +1006,7 @@ export default {
   ): Promise<void> {
     // Use Cloudflare's native schedules directly. This avoids relying on
     // a once-per-minute trigger to emulate the job schedules.
-    const scheduledMinute = Math.floor(event.scheduledTime / 60_000);
+    const scheduledMinute = Math.floor(Date.now() / 60_000);
     const swapDue = event.cron === "*/30 * * * *";
     const liquidityDue = event.cron === "*/40 * * * *";
     const liquidityEvery = 40;
