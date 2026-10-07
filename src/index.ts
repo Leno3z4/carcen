@@ -1004,13 +1004,12 @@ export default {
     event: ScheduledController,
     env: Env,
   ): Promise<void> {
-    // Use one Cron Trigger every minute. This avoids separate trigger
-    // invocations racing for the same wallet nonce at minute 00.
-    // Cloudflare's scheduledTime is the authoritative scheduled minute.
+    // Use Cloudflare's native schedules directly. This avoids relying on
+    // a once-per-minute trigger to emulate the job schedules.
     const scheduledMinute = Math.floor(event.scheduledTime / 60_000);
-    const liquidityEvery = Math.max(1, Number(env.LIQUIDITY_INTERVAL_MINUTES || "40"));
-    const swapDue = scheduledMinute % 30 === 0;
-    const liquidityDue = scheduledMinute % liquidityEvery === 0;
+    const swapDue = event.cron === "*/30 * * * *";
+    const liquidityDue = event.cron === "*/40 * * * *";
+    const liquidityEvery = 40;
 
     console.log(
       JSON.stringify({
